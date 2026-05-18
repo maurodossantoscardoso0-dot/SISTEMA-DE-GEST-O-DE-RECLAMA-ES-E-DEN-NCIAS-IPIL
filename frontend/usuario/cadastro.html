@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestão de Reclamações - Cadastro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-200 flex items-center justify-center p-4">
+    
+    <div class="w-full max-w-2xl">
+        <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <div class="p-8 md:p-10">
+                
+                <!-- CABEÇALHO COM LOGO -->
+                <div class="flex flex-col items-center mb-8">
+                    <div class="bg-gradient-to-r from-orange-400 to-orange-600 text-white text-4xl md:text-5xl font-bold px-6 py-4 rounded-xl shadow-lg mb-4">
+                        IPIL
+                    </div>
+                    
+                    <div class="text-center">
+                        <div class="text-xl md:text-2xl font-bold text-gray-800 tracking-tight">SISTEMA DE GESTÃO</div>
+                        <div class="text-base md:text-lg font-semibold text-orange-600">DE RECLAMAÇÕES E DENÚNCIAS</div>
+                    </div>
+                </div>
+
+                <!-- TÍTULO DO FORMULÁRIO -->
+                <div class="text-center mb-6">
+                    <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Cadastre-se</h1>
+                    <p class="text-sm md:text-base text-gray-600 mt-2">Preencha seus dados para se registrar no sistema</p>
+                </div>
+
+                <!-- FORMULÁRIO DE CADASTRO -->
+                <form id="registerForm" class="space-y-5">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        
+                        <!-- CAMPO NOME COMPLETO - APENAS LETRAS E ESPAÇOS -->
+                        <div>
+                            <label for="nome" class="block text-gray-700 font-semibold mb-2 text-sm md:text-base">
+                                <i class="fas fa-user text-orange-500 mr-2"></i>Nome Completo
+                            </label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-user text-gray-400"></i>
+                                </div>
+                                <input type="text" id="nome" required 
+                                       class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition duration-200 text-sm md:text-base"
+                                       placeholder="Digite seu nome completo"
+                                       pattern="[A-Za-zÀ-ÿ\s]+"
+                                       title="O nome deve conter apenas letras e espaços">
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                    <i class="fas fa-exclamation-triangle text-red-500 hidden" id="nomeWarning"></i>
+                                </div>
+                            </div>
+                            <p class="text-xs text-red-500 hidden mt-1" id="nomeError">Nome deve conter apenas letras e espaços</p>
+                        </div>
+
+                        <!-- CAMPO EMAIL -->
+                        <div>
+                            <label for="email" class="block text-gray-700 font-semibold mb-2 text-sm md:text-base">
+                                <i class="fas fa-envelope text-orange-500 mr-2"></i>E-mail
+                            </label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-envelope text-gray-400"></i>
+                                </div>
+                                <input type="email" id="email" required 
+                                       class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition duration-200 text-sm md:text-base"
+                                       placeholder="seu@email.com">
+                            </div>
+                        </div>
+
+                        <!-- CAMPO ANO DE NASCIMENTO -->
+                        <div>
+                            <label for="anoNascimento" class="block text-gray-700 font-semibold mb-2 text-sm md:text-base">
+                                <i class="fas fa-calendar-alt text-orange-500 mr-2"></i>Ano de Nascimento
+                            </label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-birthday-cake text-gray-400"></i>
+                                </div>
+                                <input type="date" id="anoNascimento" required 
+                                       class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition duration-200 text-sm md:text-base"
+                                       min="1900" max="2026">
+                            </div>
+                        </div> 
+
+                        <!-- CAMPO SEXO -->
+                        <div>
+                            <label for="sexo" class="block text-gray-700 font-semibold mb-2 text-sm md:text-base">
+                                <i class="fas fa-venus-mars text-orange-500 mr-2"></i>Sexo
+                            </label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-user-tie text-gray-400"></i>
+                                </div>
+                                <select id="sexo" required 
+                                        class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition duration-200 bg-white appearance-none">
+                                    <option value="">Selecione o sexo</option>
+                                    <option value="masculino">Masculino</option>
+                                    <option value="feminino">Feminino</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-chevron-down text-gray-400"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- CAMPO CURSO - SELECT COM TODOS OS CURSOS -->
+                        <div>
+                            <label for="curso" class="block text-gray-700 font-semibold mb-2 text-sm md:text-base">
+                                <i class="fas fa-graduation-cap text-orange-500 mr-2"></i>Curso
+                            </label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-book-open text-gray-400"></i>
+                                </div>
+                                <select id="curso" required 
+                                        class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition duration-200 bg-white appearance-none">
+                                    <option value="">Selecione o curso</option>
+                                    <option value="Técnico de Obras de Construção Civil">Técnico de Obras de Construção Civil</option>
+                                    <option value="Técnico de Desenhador Projetista">Técnico de Desenhador Projetista</option>
+                                    <option value="Técnico de Electrónica Industrial e Automação">Técnico de Electrónica Industrial e Automação</option>
+                                    <option value="Técnico de Energias e Instalações Eléctricas">Técnico de Energias e Instalações Eléctricas</option>
+                                    <option value="Técnico de Energias Renovaveis">Técnico de Energias Renovaveis</option>
+                                    <option value="Tecnico de Eletronica e Telecomunicações">Tecnico de Eletronica e Telecomunicações</option>
+                                    <option value="Técnico de Gestão de Sistemas Informáticos">Técnico de Gestão de Sistemas Informáticos</option>
+                                    <option value="Técnico de Informática">Técnico de Informática</option>
+                                    <option value="Técnico de Mecatrónica">Técnico de Mecatrónica</option>
+                                    <option value="Técnico de Electromecânica">Técnico de Electromecânica</option>
+                                    <option value="Técnico de Frio e Climatizaçao">Técnico de Frio e Climatizaçao</option>
+                                    <option value="Técnico de Máquinas e Motores">Técnico de Máquinas e Motores</option>
+                                    <option value="Técnico de Produção de Metalomecânica">Técnico de Produção de Metalomecânica</option>
+                                    <option value="Técnico de Mecatrónica Automóvel">Técnico de Mecatrónica Automóvel</option>
+                                    <option value="Mecânica Auto">Mecânica Auto</option>
+                                    <option value="Técnico de Ambiente e Controlo da Qualidade">Técnico de Ambiente e Controlo da Qualidade</option>
+                                    <option value="Técnico de Bioquímica">Técnico de Bioquímica</option>
+                                    <option value="Técnico de Química Industrial">Técnico de Química Industrial</option>
+                                    <option value="Técnico de Petroquímica">Técnico de Petroquímica</option>
+                                    <option value="Técnico de Técnicas de Laboratório">Técnico de Técnicas de Laboratório</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-chevron-down text-gray-400"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CAMPO Nº DE PROCESSO -->
+                        <div>
+                            <label for="processo" class="block text-gray-700 font-semibold mb-2 text-sm md:text-base">
+                                <i class="fas fa-hashtag text-orange-500 mr-2"></i>Nº do Processo
+                            </label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-qrcode text-gray-400"></i>
+                                </div>
+                                <input type="number" id="processo" required placeholder="Digite o seu nº de processo" min="0" oninput="if(this.value.length>5) this.value=this.value.slice(0,5)"
+                                       class="w-full pl-10 pr-4 py-3 bg-white border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition duration-200 text-sm md:text-base">
+                            </div>
+                        </div>
+                            
+                        <!-- CAMPO CLASSE -->
+                        <div>
+                            <label for="classe" class="block text-gray-700 font-semibold mb-2 text-sm md:text-base">
+                                <i class="fas fa-layer-group text-orange-500 mr-2"></i>Classe
+                            </label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-chart-line text-gray-400"></i>
+                                </div>
+                                <select id="classe" required class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition bg-white appearance-none">
+                                    <option value="">Selecione uma classe</option>
+                                    <option value="decima">10ª Classe</option>
+                                    <option value="decima_primeira">11ª Classe</option>
+                                    <option value="decima_segunda">12ª Classe</option>
+                                    <option value="decima_terceira">13ª Classe</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-chevron-down text-gray-400"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CAMPO TURMA - APENAS LETRAS E NÚMEROS -->
+                        <div>
+                            <label for="turma" class="block text-gray-700 font-semibold mb-2 text-sm md:text-base">
+                                <i class="fas fa-users text-orange-500 mr-2"></i>Turma
+                            </label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-user-friends text-gray-400"></i>
+                                </div>
+                                <input type="text" id="turma" 
+                                       class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition duration-200 text-sm md:text-base"
+                                       placeholder="Ex: IG12A, IG13A, II10A" required
+                                       pattern="[A-Za-z0-9]+"
+                                       title="A turma deve conter apenas letras e números">
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                    <i class="fas fa-exclamation-triangle text-red-500 hidden" id="turmaWarning"></i>
+                                </div>
+                            </div>
+                            <p class="text-xs text-red-500 hidden mt-1" id="turmaError">Turma deve conter apenas letras e números</p>
+                        </div>
+
+                        <!-- CAMPO SALA - APENAS LETRAS E NÚMEROS -->
+                        <div>
+                            <label for="sala" class="block text-gray-700 font-semibold mb-2 text-sm md:text-base">
+                                <i class="fas fa-door-open text-orange-500 mr-2"></i>Sala
+                            </label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-building text-gray-400"></i>
+                                </div>
+                                <input type="text" id="sala" 
+                                       class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition duration-200 text-sm md:text-base"
+                                       placeholder="Digite o número da sala" required
+                                       pattern="[A-Za-z0-9]+"
+                                       title="A sala deve conter apenas letras e números">
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                    <i class="fas fa-exclamation-triangle text-red-500 hidden" id="salaWarning"></i>
+                                </div>
+                            </div>
+                            <p class="text-xs text-red-500 hidden mt-1" id="salaError">Sala deve conter apenas letras e números</p>
+                        </div>
+
+                        <!-- CAMPO TELEFONE -->
+                        <div>
+                            <label for="telefone" class="block text-gray-700 font-semibold mb-2 text-sm md:text-base">
+                                <i class="fas fa-phone-alt text-orange-500 mr-2"></i>Telefone
+                            </label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-phone-alt text-gray-400"></i>
+                                </div>
+                                <input type="tel" id="telefone" oninput="if(this.value.length>9) this.value=this.value.slice(0,9)" 
+                                       class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition duration-200 text-sm md:text-base"
+                                       placeholder="Ex: 923456789" required
+                                       pattern="[0-9]+"
+                                       title="Telefone deve conter apenas números">
+                            </div>
+                        </div>
+
+                        <!-- CAMPO SENHA -->
+                        <div>
+                            <label for="password" class="block text-gray-700 font-semibold mb-2 text-sm md:text-base">
+                                <i class="fas fa-lock text-orange-500 mr-2"></i>Senha
+                            </label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-lock text-gray-400"></i>
+                                </div>
+                                <input type="password" id="password" required 
+                                       class="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition duration-200 text-sm md:text-base"
+                                       placeholder="Mínimo 6 caracteres">
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                    <button type="button" id="togglePassword" class="text-gray-400 hover:text-gray-600 focus:outline-none">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CAMPO CONFIRMAR SENHA -->
+                        <div>
+                            <label for="confirmPassword" class="block text-gray-700 font-semibold mb-2 text-sm md:text-base">
+                                <i class="fas fa-check-circle text-orange-500 mr-2"></i>Confirmar Senha
+                            </label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-lock text-gray-400"></i>
+                                </div>
+                                <input type="password" id="confirmPassword" required 
+                                       class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition duration-200 text-sm md:text-base"
+                                       placeholder="Digite a senha novamente">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TERMOS E CONDIÇÕES -->
+                    <div class="bg-orange-50 p-5 rounded-xl mt-4">
+                        <div class="flex items-start">
+                            <div class="flex items-center h-5">
+                                <input id="terms" type="checkbox" required class="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded">
+                            </div>
+                            <div class="ml-3">
+                                <label for="terms" class="text-sm font-medium text-gray-700">
+                                    Aceito os termos e condições de uso
+                                </label>
+                                <p class="text-xs text-gray-500 mt-1">
+                                    Ao criar uma conta, você concorda com nossa <a href="#" class="text-orange-600 hover:text-orange-800 font-semibold">Política de Privacidade</a> e 
+                                    <a href="#" class="text-orange-600 hover:text-orange-800 font-semibold">Termos de Serviço</a>.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BOTÕES DE AÇÃO -->
+                    <div class="flex flex-col sm:flex-row gap-4 pt-4">
+                        <button type="submit" id="submitBTN" class="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transition duration-300 transform hover:-translate-y-0.5 text-sm md:text-base">
+                            <i class="fas fa-user-plus mr-2"></i>Criar minha conta
+                        </button>
+                        
+                        <a href="../login.html" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 px-6 rounded-xl shadow transition duration-300 text-sm md:text-base text-center">
+                            <i class="fas fa-sign-in-alt mr-2"></i>Voltar ao login
+                        </a>
+                    </div>
+
+                    <div class="text-center mt-4">
+                        <a href="../homepage.html" class="inline-flex items-center text-orange-600 hover:text-orange-800 font-medium transition duration-200 text-sm">
+                            <i class="fas fa-arrow-left mr-2"></i>
+                            Voltar para página inicial
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="text-center mt-6 text-gray-500 text-xs md:text-sm">
+            <p>© 2026 Instituto Politécnico Industrial de Luanda - IPIL</p>
+            <h6>Desenvolvido por José & Mauro</h6>
+        </div>
+    </div>
+
+    <script src="./script.js"></script>
+</body>
+</html>

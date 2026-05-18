@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPIL - Meu Perfil | Sistema de Denúncias</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        .nav-link {
+            transition: all 0.3s ease;
+        }
+        .nav-link:hover {
+            transform: translateY(-2px);
+        }
+        .upload-area {
+            transition: all 0.3s ease;
+        }
+        .upload-area:hover {
+            border-color: #f97316;
+            background-color: #fff7ed;
+        }
+        .loading {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    
+    <!-- ============================================ -->
+    <!-- NAVBAR SUPERIOR DINÂMICA -->
+    <!-- ============================================ -->
+    <nav class="bg-white shadow-lg border-b border-gray-200 fixed w-full z-50 top-0">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-gradient-to-r from-orange-400 to-orange-600 text-white text-xl font-bold px-4 py-2 rounded-lg shadow-md">
+                        IPIL
+                    </div>
+                    <div class="hidden md:block">
+                        <span class="text-gray-700 font-semibold">Sistema de Reclamações e Denúncias</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    <button class="relative text-gray-600 hover:text-orange-600 transition">
+                        <i class="fas fa-bell text-xl"></i>
+                        <span id="notificationBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center hidden">0</span>
+                    </button>
+                    
+                    <div class="flex items-center space-x-3">
+                        <div class="text-right hidden md:block">
+                            <p id="usuarioNome" class="text-sm font-semibold text-gray-800">Carregando...</p>
+                            <p id="usuarioProcesso" class="text-xs text-gray-500">
+                                <i class="fas fa-hashtag text-orange-500 mr-1 text-xs"></i> 
+                                Processo: <span id="processoNumero">---</span>
+                            </p>
+                        </div>
+                        <div id="usuarioAvatar" class="w-10 h-10 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-white font-bold">
+                            JS
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="flex pt-16">
+        <aside class="w-64 bg-white shadow-lg h-screen fixed hidden lg:block overflow-y-auto">
+            <div class="p-6">
+                <div class="flex items-center space-x-3 mb-8 pb-6 border-b border-gray-200 lg:hidden">
+                    <div id="avatarMobile" class="w-12 h-12 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                        JS
+                    </div>
+                    <div>
+                        <p id="nomeMobile" class="font-semibold text-gray-800">Carregando...</p>
+                        <p id="processoMobile" class="text-xs text-gray-500">
+                            <i class="fas fa-hashtag text-orange-500 mr-1 text-xs"></i>
+                            Processo: <span id="processoNumeroMobile">---</span>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Menu Principal</p>
+                    
+                    <a href="usuario/dashboard.html" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-orange-50 hover:text-orange-700 rounded-xl transition nav-link">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    
+                    <a href="usuario/reclamacoes.html" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-orange-50 hover:text-orange-700 rounded-xl transition nav-link">
+                        <i class="fas fa-flag"></i>
+                        <span>Reclamações</span>
+                        <span id="reclamacoesCount" class="ml-auto bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">0</span>
+                    </a>
+                    
+                    <a href="usuario/denuncias.html" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-orange-50 hover:text-orange-700 rounded-xl transition nav-link">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Denúncias</span>
+                        <span id="denunciasCount" class="ml-auto bg-red-100 text-red-600 text-xs px-2 py-1 rounded-full">0</span>
+                    </a>
+                    
+                    <a href="usuario/novasubmissao.html" class="flex items-center space-x-3 px-4 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl shadow-lg hover:shadow-xl transition transform hover:-translate-y-1 nav-link mt-6">
+                        <i class="fas fa-plus-circle"></i>
+                        <span class="font-semibold">Nova Submissão</span>
+                    </a>
+                </div>
+
+                <div class="mt-12 pt-6 border-t border-gray-200">
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Configurações</p>
+                    
+                    <a href="#" class="flex items-center space-x-3 px-4 py-3 bg-gradient-to-r from-orange-50 to-orange-100 text-orange-700 rounded-xl font-medium nav-link border-l-4 border-orange-500">
+                        <i class="fas fa-user text-orange-500"></i>
+                        <span>Meu Perfil</span>
+                    </a>
+                    
+                    <a href="#" onclick="logout()" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl transition">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Sair</span>
+                    </a>
+                </div>
+            </div>
+        </aside>
+
+        <div class="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+            <div class="grid grid-cols-4 gap-1 p-2">
+                <a href="usuario/dashboard.html" class="flex flex-col items-center py-2 px-1 text-gray-500 hover:text-orange-600 transition">
+                    <i class="fas fa-tachometer-alt text-lg"></i>
+                    <span class="text-xs mt-1">Dashboard</span>
+                </a>
+                <a href="usuario/reclamacoes.html" class="flex flex-col items-center py-2 px-1 text-gray-500 hover:text-orange-600 transition">
+                    <i class="fas fa-flag text-lg"></i>
+                    <span class="text-xs mt-1">Reclamações</span>
+                </a>
+                <a href="usuario/denuncias.html" class="flex flex-col items-center py-2 px-1 text-gray-500 hover:text-orange-600 transition">
+                    <i class="fas fa-exclamation-triangle text-lg"></i>
+                    <span class="text-xs mt-1">Denúncias</span>
+                </a>
+                <a href="#" class="flex flex-col items-center py-2 px-1 text-orange-600 bg-orange-50 rounded-lg">
+                    <i class="fas fa-user text-lg"></i>
+                    <span class="text-xs mt-1 font-medium">Perfil</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="flex-1 lg:ml-64">
+            <div class="container mx-auto px-4 py-8 pb-24 lg:pb-8">
+                
+                <div class="flex items-center text-sm text-gray-500 mb-6">
+                    <a href="usuario/dashboard.html" class="hover:text-orange-600">Home</a>
+                    <i class="fas fa-chevron-right mx-2 text-xs"></i>
+                    <span class="text-orange-600 font-medium">Meu Perfil</span>
+                </div>
+
+                <div class="mb-8">
+                    <div class="flex items-center space-x-3 mb-2">
+                        <div class="h-8 w-2 bg-gradient-to-b from-orange-500 to-orange-600 rounded-full"></div>
+                        <h1 class="text-2xl md:text-3xl font-bold text-gray-800">
+                            Meu Perfil, <span id="saudacaoNome">...</span>
+                        </h1>
+                    </div>
+                    <p class="text-gray-600 ml-5">Gerencie suas informações pessoais</p>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                    <div class="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-4">
+                        <h2 class="text-xl font-bold text-white">Informações Pessoais</h2>
+                    </div>
+
+                    <div class="p-6">
+                        <div class="flex flex-col lg:flex-row gap-8">
+                            <div class="lg:w-1/3">
+                                <div class="text-center">
+                                    <div class="relative inline-block">
+                                        <div id="profileImage" class="w-40 h-40 mx-auto bg-gradient-to-r from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-white text-5xl font-bold shadow-lg">
+                                            JS
+                                        </div>
+                                        
+                                        <img id="profilePreview" src="#" alt="Preview" class="w-40 h-40 mx-auto rounded-full object-cover shadow-lg hidden">
+                                        
+                                        <label for="photoUpload" class="absolute bottom-0 right-0 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg cursor-pointer hover:bg-orange-50 transition border border-gray-200">
+                                            <i class="fas fa-camera text-orange-600"></i>
+                                        </label>
+                                        <input type="file" id="photoUpload" class="hidden" accept="image/*">
+                                    </div>
+                                    <p class="text-sm text-gray-500 mt-3">Clique no ícone da câmera para alterar a foto</p>
+                                    <button id="removePhoto" class="text-xs text-red-600 hover:text-red-700 mt-2 hidden">
+                                        <i class="fas fa-trash mr-1"></i> Remover foto
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="lg:w-2/3">
+                                <form id="profileForm">
+                                    <div class="mb-6">
+                                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                            <i class="fas fa-user text-orange-500 mr-2"></i>
+                                            Nome Completo
+                                        </label>
+                                        <input type="text" id="nomeCompleto" value="" 
+                                               class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 transition">
+                                    </div>
+
+                                    <div class="mb-6">
+                                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                            <i class="fas fa-envelope text-orange-500 mr-2"></i>
+                                            Email
+                                        </label>
+                                        <div class="relative">
+                                            <input type="email" id="email" value="" readonly
+                                                   class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-500 cursor-not-allowed">
+                                            <span class="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-orange-500 font-medium">
+                                                <i class="fas fa-lock mr-1"></i>O email não pode ser alterado
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-6">
+                                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                            <i class="fas fa-hashtag text-orange-500 mr-2"></i>
+                                            Nº do Processo
+                                        </label>
+                                        <div class="relative">
+                                            <input type="text" id="numeroProcesso" value="" readonly
+                                                   class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-500 cursor-not-allowed">
+                                            <span class="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-orange-500 font-medium">
+                                                <i class="fas fa-lock mr-1"></i>Identificador único
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-6">
+                                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                            <i class="fas fa-phone text-orange-500 mr-2"></i>
+                                            Telefone
+                                        </label>
+                                        <input type="tel" id="telefone" value="" 
+                                               class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
+                                               placeholder="(+244) 000-000-000">
+                                    </div>
+
+                                    <div class="mb-6">
+                                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                            <i class="fas fa-calendar-alt text-orange-500 mr-2"></i>
+                                            Data de Nascimento
+                                        </label>
+                                        <input type="date" id="dataNascimento" value="" 
+                                               class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 transition">
+                                    </div>
+
+                                    <div class="mb-6">
+                                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                            <i class="fas fa-venus-mars text-orange-500 mr-2"></i>
+                                            Sexo
+                                        </label>
+                                        <select id="sexo" class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 transition bg-white">
+                                            <option value="">Selecione</option>
+                                            <option value="masculino">Masculino</option>
+                                            <option value="feminino">Feminino</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-6">
+                                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                            <i class="fas fa-graduation-cap text-orange-500 mr-2"></i>
+                                            Curso
+                                        </label>
+                                        <select id="curso" class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 transition bg-white">
+                                            <option value="">Selecione o curso</option>
+                                            <option value="Técnico de Obras de Construção Civil">Técnico de Obras de Construção Civil</option>
+                                            <option value="Técnico de Desenhador Projetista">Técnico de Desenhador Projetista</option>
+                                            <option value="Técnico de Electrónica Industrial e Automação">Técnico de Electrónica Industrial e Automação</option>
+                                            <option value="Técnico de Energias e Instalações Eléctricas">Técnico de Energias e Instalações Eléctricas</option>
+                                            <option value="Técnico de Energias Renovaveis">Técnico de Energias Renovaveis</option>
+                                            <option value="Tecnico de Eletronica e Telecomunicações">Tecnico de Eletronica e Telecomunicações</option>
+                                            <option value="Técnico de Gestão de Sistemas Informáticos">Técnico de Gestão de Sistemas Informáticos</option>
+                                            <option value="Técnico de Informática">Técnico de Informática</option>
+                                            <option value="Técnico de Mecatrónica">Técnico de Mecatrónica</option>
+                                            <option value="Técnico de Electromecânica">Técnico de Electromecânica</option>
+                                            <option value="Técnico de Frio e Climatizaçao">Técnico de Frio e Climatizaçao</option>
+                                            <option value="Técnico de Máquinas e Motores">Técnico de Máquinas e Motores</option>
+                                            <option value="Técnico de Produção de Metalomecânica">Técnico de Produção de Metalomecânica</option>
+                                            <option value="Técnico de Mecatrónica Automóvel">Técnico de Mecatrónica Automóvel</option>
+                                            <option value="Mecânica Auto">Mecânica Auto</option>
+                                            <option value="Técnico de Ambiente e Controlo da Qualidade">Técnico de Ambiente e Controlo da Qualidade</option>
+                                            <option value="Técnico de Bioquímica">Técnico de Bioquímica</option>
+                                            <option value="Técnico de Química Industrial">Técnico de Química Industrial</option>
+                                            <option value="Técnico de Petroquímica">Técnico de Petroquímica</option>
+                                            <option value="Técnico de Técnicas de Laboratório">Técnico de Técnicas de Laboratório</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-6">
+                                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                            <i class="fas fa-layer-group text-orange-500 mr-2"></i>
+                                            Classe
+                                        </label>
+                                        <select id="classe" class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 transition bg-white">
+                                            <option value="">Selecione</option>
+                                            <option value="10ª Classe">10ª Classe</option>
+                                            <option value="11ª Classe">11ª Classe</option>
+                                            <option value="12ª Classe">12ª Classe</option>
+                                            <option value="13ª Classe">13ª Classe</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-6">
+                                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                            <i class="fas fa-users text-orange-500 mr-2"></i>
+                                            Turma
+                                        </label>
+                                        <input type="text" id="turma" value="" 
+                                               class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
+                                               placeholder="Ex: IG12A">
+                                    </div>
+
+                                    <div class="mb-6">
+                                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                            <i class="fas fa-door-open text-orange-500 mr-2"></i>
+                                            Sala
+                                        </label>
+                                        <input type="text" id="sala" value="" 
+                                               class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 transition"
+                                               placeholder="Número da sala">
+                                    </div>
+
+                                    <div class="mb-6">
+                                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                            <i class="fas fa-circle text-orange-500 mr-2"></i>
+                                            Status da Conta
+                                        </label>
+                                        <div class="relative">
+                                            <input type="text" id="statusConta" value="" readonly
+                                                   class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-500 cursor-not-allowed">
+                                        </div>
+                                    </div>
+
+                                    <div class="flex flex-col sm:flex-row gap-3 mt-8 pt-6 border-t border-gray-200">
+                                        <button type="submit" class="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-orange-600 hover:to-orange-700 transition transform hover:-translate-y-1 shadow-md">
+                                            <i class="fas fa-save mr-2"></i>
+                                            Salvar Alterações
+                                        </button>
+                                        <button type="button" onclick="resetForm()" class="flex-1 bg-gray-100 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-200 transition">
+                                            <i class="fas fa-times mr-2"></i>
+                                            Cancelar
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-md overflow-hidden mt-8">
+                    <div class="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-4">
+                        <h2 class="text-xl font-bold text-white">Segurança</h2>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="border border-gray-200 rounded-lg p-5">
+                                <h3 class="font-semibold text-gray-800 mb-4 flex items-center">
+                                    <i class="fas fa-lock text-orange-500 mr-2"></i>
+                                    Alterar Senha
+                                </h3>
+                                <div class="space-y-4">
+                                    <input type="password" id="senhaAtual" placeholder="Senha atual" 
+                                           class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                                    <input type="password" id="novaSenha" placeholder="Nova senha" 
+                                           class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                                    <input type="password" id="confirmarSenha" placeholder="Confirmar nova senha" 
+                                           class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                                    <button onclick="alterarSenha()" class="w-full bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition">
+                                        Atualizar Senha
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="border border-gray-200 rounded-lg p-5">
+                                <h3 class="font-semibold text-gray-800 mb-4 flex items-center">
+                                    <i class="fas fa-shield-alt text-orange-500 mr-2"></i>
+                                    Autenticação em Duas Etapas
+                                </h3>
+                                <p class="text-sm text-gray-600 mb-4">
+                                    Aumente a segurança da sua conta ativando a autenticação em duas etapas.
+                                </p>
+                                <label class="flex items-center justify-between cursor-pointer">
+                                    <span class="text-sm font-medium text-gray-700">Ativar autenticação</span>
+                                    <div class="relative">
+                                        <input type="checkbox" id="twoFactor" class="sr-only peer">
+                                        <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-orange-600 transition"></div>
+                                        <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition peer-checked:translate-x-5"></div>
+                                    </div>
+                                </label>
+                                <div class="mt-4 text-xs text-gray-500">
+                                    <i class="fas fa-info-circle mr-1"></i>
+                                    Você precisará de um aplicativo autenticador
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-md overflow-hidden mt-8 border border-red-200">
+                    <div class="bg-gradient-to-r from-red-500 to-red-600 px-6 py-4">
+                        <h2 class="text-xl font-bold text-white">Zona Perigosa</h2>
+                    </div>
+                    <div class="p-6">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                            <div>
+                                <h3 class="font-semibold text-gray-800 mb-1">Excluir minha conta</h3>
+                                <p class="text-sm text-gray-600">Esta ação é irreversível. Todos os seus dados serão permanentemente removidos.</p>
+                            </div>
+                            <button onclick="confirmarExclusao()" class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium">
+                                <i class="fas fa-trash mr-2"></i>
+                                Excluir minha conta
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <footer class="mt-12 text-center text-gray-500 text-sm pb-20 lg:pb-12">
+                    <p>© 2026 Instituto Politécnico Industrial de Luanda - IPIL</p>
+                    <p class="mt-1">Desenvolvido por José & Mauro</p>
+                </footer>
+            </div>
+        </div>
+    </div>
+
+    <script src="./meuprfil.js"></script>
+</body>
+</html>

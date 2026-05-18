@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<!-- Declaração do tipo de documento HTML5 -->
+<html lang="pt">
+<!-- Início do documento HTML com idioma português -->
+
+<head>
+    <!-- CABEÇALHO - Informações técnicas da página -->
+    <meta charset="UTF-8">
+    <!-- Define a codificação de caracteres como UTF-8 (permite acentos e caracteres especiais) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Torna a página responsiva em dispositivos móveis -->
+    <title>IPIL - Gestão de Usuários | Sistema de Denúncias</title>
+    <!-- Título que aparece na aba do navegador -->
+
+    <!-- BIBLIOTECAS EXTERNAS -->
+    <!-- Tailwind CSS - Framework de estilos utilitário -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Link para acessar o Tailwind via CDN -->
+    
+    <!-- Font Awesome - Biblioteca de ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Fornece ícones como: usuário, email, telefone, etc. -->
+    
+    <!-- Google Fonts - Fonte Inter para melhor legibilidade -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Importa a fonte Inter com vários pesos (300 a 800) -->
+
+    <!-- ESTILOS PERSONALIZADOS -->
+    <style>
+        /* Aplica a fonte Inter a todos os elementos da página */
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        /* Estilo para links de navegação com animação suave */
+        .nav-link {
+            transition: all 0.3s ease;
+        }
+        
+        /* Efeito de levantar ao passar o mouse sobre links */
+        .nav-link:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Estilo para o spinner de carregamento */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 200px;
+        }
+
+        /* Animação do spinner */
+        .spinner {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Animação de fade out para notificações toast */
+        .fade-out {
+            animation: fadeOut 0.5s ease-out;
+        }
+
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        /* Modal overlay */
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+    </style>
+</head>
+
+<!-- CORPO DA PÁGINA - Tudo que aparece visualmente -->
+<body class="bg-gray-50">
+
+    <!-- ============================================ -->
+    <!-- NAVBAR SUPERIOR (BARRA DE NAVEGAÇÃO DO TOPO) -->
+    <!-- ============================================ -->
+    <nav class="bg-white shadow-lg border-b border-gray-200 fixed w-full z-50 top-0">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center h-16">
+                
+                <!-- LADO ESQUERDO - Logo e título do sistema -->
+                <div class="flex items-center space-x-3">
+                    <div class="bg-gradient-to-r from-orange-600 to-orange-800 text-white text-xl font-bold px-4 py-2 rounded-lg shadow-md">
+                        IPIL
+                    </div>
+                    <div class="hidden md:block">
+                        <span class="text-gray-700 font-semibold">Painel Administrador</span>
+                    </div>
+                </div>
+
+                <!-- LADO DIREITO - Perfil do administrador -->
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="text-right hidden md:block">
+                            <p id="adminNome" class="text-sm font-semibold text-gray-800">Carregando...</p>
+                            <p class="text-xs text-gray-500">Administrador</p>
+                        </div>
+                        <div class="w-10 h-10 bg-gradient-to-r from-orange-600 to-orange-800 rounded-full flex items-center justify-center text-white font-bold">
+                            AD
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ============================================ -->
+    <!-- LAYOUT PRINCIPAL (SIDEBAR + CONTEÚDO) -->
+    <!-- ============================================ -->
+    <div class="flex pt-16">
+        
+        <!-- ============================================ -->
+        <!-- SIDEBAR - MENU LATERAL -->
+        <!-- ============================================ -->
+        <aside class="w-64 bg-white shadow-lg h-screen fixed hidden lg:block overflow-y-auto">
+            <div class="p-6">
+                <!-- MENU PRINCIPAL -->
+                <div class="space-y-2">
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Menu Admin</p>
+                    
+                    <a href="dashboardAdmin.html" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-orange-50 hover:text-orange-700 rounded-xl transition nav-link">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    
+                    <a href="denunciasadmin.html" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-orange-50 hover:text-orange-700 rounded-xl transition nav-link">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Denúncias</span>
+                        <span id="badgeDenuncias" class="ml-auto bg-red-100 text-red-600 text-xs px-2 py-1 rounded-full">0</span>
+                    </a>
+                    
+                    <a href="reclamacoesadmin.html" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-orange-50 hover:text-orange-700 rounded-xl transition nav-link">
+                        <i class="fas fa-flag"></i>
+                        <span>Reclamações</span>
+                        <span id="badgeReclamacoes" class="ml-auto bg-yellow-100 text-yellow-600 text-xs px-2 py-1 rounded-full">0</span>
+                    </a>
+                    
+                    <!-- Item Usuários - ATIVO -->
+                    <a href="usuarios.html" class="flex items-center space-x-3 px-4 py-3 bg-gradient-to-r from-orange-50 to-orange-100 text-orange-700 rounded-xl font-medium nav-link border-l-4 border-orange-600">
+                        <i class="fas fa-users"></i>
+                        <span>Usuários</span>
+                        <span id="badgeUsuarios" class="ml-auto bg-orange-100 text-orange-600 text-xs px-2 py-1 rounded-full">0</span>
+                    </a>
+                    
+                    <a href="relatorioadmin.html" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-orange-50 hover:text-orange-700 rounded-xl transition nav-link">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Relatórios</span>
+                    </a>
+                </div>
+
+                <!-- MENU SECUNDÁRIO (Configurações) -->
+                <div class="mt-12 pt-6 border-t border-gray-200">
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Configurações</p>
+                    
+                    <a href="perfil.html" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl transition">
+                        <i class="fas fa-user"></i>
+                        <span>Meu Perfil</span>
+                    </a>
+                    
+                    <a href="#" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl transition">
+                        <i class="fas fa-cog"></i>
+                        <span>Configurações</span>
+                    </a>
+                    
+                    <a href="#" onclick="logout()" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-red-50 hover:text-red-600 rounded-xl transition">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Sair</span>
+                    </a>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ============================================ -->
+        <!-- CONTEÚDO PRINCIPAL - GESTÃO DE USUÁRIOS -->
+        <!-- ============================================ -->
+        <div class="flex-1 lg:ml-64">
+            <div class="container mx-auto px-4 py-8 pb-24 lg:pb-8">
+                
+                <!-- BREADCRUMB (CAMINHO DE NAVEGAÇÃO) -->
+                <div class="flex items-center text-sm text-gray-500 mb-6">
+                    <a href="dashboardAdmin.html" class="hover:text-orange-600">Admin</a>
+                    <i class="fas fa-chevron-right mx-2 text-xs"></i>
+                    <span class="text-orange-600 font-medium">Usuários</span>
+                </div>
+
+                <!-- CABEÇALHO DA PÁGINA -->
+                <div class="mb-8">
+                    <div class="flex items-center space-x-3 mb-2">
+                        <div class="h-8 w-2 bg-gradient-to-b from-orange-600 to-orange-800 rounded-full"></div>
+                        <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Gestão de Usuários</h1>
+                    </div>
+                    <p id="totalUsuariosTexto" class="text-gray-600 ml-5">Carregando usuários...</p>
+                </div>
+
+                <!-- BARRA DE BUSCA E FILTROS -->
+                <div class="bg-white rounded-xl shadow-md p-4 mb-8">
+                    <div class="flex flex-col gap-4">
+                        <!-- Linha 1: Busca -->
+                        <div class="flex-1 relative">
+                            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <input type="text" id="searchInput" placeholder="Buscar usuários por nome, email ou telefone..." 
+                                   class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        </div>
+                        <!-- Linha 2: Filtros (Status e Tipo) -->
+                        <div class="flex flex-wrap gap-4">
+                            <!-- Filtro por Status -->
+                            <select id="filtroStatus" class="px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white">
+                                <option value="todos">Todos os status</option>
+                                <option value="ativo">Ativo</option>
+                                <option value="inativo">Inativo</option>
+                                <option value="bloqueado">Bloqueado</option>
+                            </select>
+                            
+                            <!-- Botão Filtrar -->
+                            <button onclick="aplicarFiltros()" class="px-6 py-2.5 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center space-x-2">
+                                <i class="fas fa-filter"></i>
+                                <span>Filtrar</span>
+                            </button>
+                            
+                            <!-- Botão Limpar Filtros -->
+                            <button onclick="limparFiltros()" class="px-6 py-2.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors flex items-center space-x-2">
+                                <i class="fas fa-times"></i>
+                                <span>Limpar Filtros</span>
+                            </button>
+                            
+                            <!-- Botão Atualizar Lista -->
+                            <button onclick="carregarUsuarios()" class="px-6 py-2.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors flex items-center space-x-2 ml-auto">
+                                <i class="fas fa-sync-alt"></i>
+                                <span>Atualizar</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LISTA DE USUÁRIOS -->
+                <div id="listaUsuarios" class="space-y-4">
+                    <div class="loading">
+                        <i class="fas fa-spinner spinner text-orange-600 text-4xl"></i>
+                        <p class="ml-3 text-gray-500">Carregando usuários...</p>
+                    </div>
+                </div>
+
+                <!-- RODAPÉ (FOOTER) -->
+                <footer class="mt-12 text-center text-gray-500 text-sm">
+                    <p>© 2026 Instituto Politécnico Industrial de Luanda - IPIL</p>
+                    <p class="mt-1"> Painel Administrativo</p>
+                </footer>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- MODAL DE DETALHES DO USUÁRIO -->
+    <!-- ============================================ -->
+    <div id="modalDetalhes" class="fixed inset-0 z-50 hidden overflow-y-auto">
+        <!-- Overlay do modal -->
+        <div class="modal-overlay fixed inset-0 bg-black bg-opacity-50 transition-opacity"></div>
+        
+        <!-- Container do modal - centralizado -->
+        <div class="relative min-h-screen flex items-center justify-center p-4">
+            <div class="relative bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                
+                <!-- Cabeçalho do Modal -->
+                <div class="sticky top-0 bg-gradient-to-r from-orange-600 to-orange-800 text-white px-6 py-4 rounded-t-2xl flex justify-between items-center">
+                    <h3 class="text-xl font-bold flex items-center">
+                        <i class="fas fa-user-circle mr-3 text-2xl"></i>
+                        Detalhes do Usuário
+                    </h3>
+                    <button onclick="fecharModal()" class="text-white hover:text-gray-200 transition text-2xl">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <!-- Conteúdo do Modal -->
+                <div id="modalConteudo" class="p-6">
+                    <!-- Conteúdo será preenchido dinamicamente -->
+                    <div class="loading">
+                        <i class="fas fa-spinner spinner text-orange-600 text-3xl"></i>
+                    </div>
+                </div>
+                
+                <!-- Rodapé do Modal -->
+                <div class="sticky bottom-0 bg-gray-50 px-6 py-4 rounded-b-2xl border-t border-gray-200 flex justify-end">
+                    <button onclick="fecharModal()" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                        Fechar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+   
+    <script src="usuarios.js"></script>
+</body>
+</html>
