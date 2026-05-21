@@ -1,22 +1,307 @@
-// reclamacoesadmin.js - Script da página de Reclamações
+// reclamacoesadmin.js - Script da página de Reclamações (Versão Melhorada)
 
 let reclamacoesData = [];
 let usuariosData = [];
 
+// ============================================
+// MODAIS E NOTIFICAÇÕES MODERNOS
+// ============================================
+
+// Função para mostrar modal personalizado
+function showModal(title, message, type = 'info', onConfirm = null, onCancel = null) {
+    // Remover modal existente
+    const existingModal = document.getElementById('customModal');
+    if (existingModal) existingModal.remove();
+    
+    const modal = document.createElement('div');
+    modal.id = 'customModal';
+    modal.className = 'fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 backdrop-blur-sm';
+    modal.style.animation = 'fadeIn 0.3s ease';
+    
+    // Configurar ícones e cores baseado no tipo
+    const config = {
+        success: { icon: 'fa-check-circle', color: 'from-green-500 to-green-600', bgIcon: 'bg-green-100', textColor: 'text-green-600' },
+        error: { icon: 'fa-exclamation-circle', color: 'from-red-500 to-red-600', bgIcon: 'bg-red-100', textColor: 'text-red-600' },
+        warning: { icon: 'fa-exclamation-triangle', color: 'from-yellow-500 to-yellow-600', bgIcon: 'bg-yellow-100', textColor: 'text-yellow-600' },
+        info: { icon: 'fa-info-circle', color: 'from-blue-500 to-blue-600', bgIcon: 'bg-blue-100', textColor: 'text-blue-600' },
+        question: { icon: 'fa-question-circle', color: 'from-orange-500 to-orange-600', bgIcon: 'bg-orange-100', textColor: 'text-orange-600' }
+    };
+    
+    const currentConfig = config[type] || config.info;
+    
+    modal.innerHTML = `
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden modal-slide-in">
+            <!-- Cabeçalho -->
+            <div class="bg-gradient-to-r ${currentConfig.color} px-6 py-4">
+                <div class="flex items-center space-x-3">
+                    <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg">
+                        <i class="fas ${currentConfig.icon} ${currentConfig.textColor} text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white">${escapeHtml(title)}</h3>
+                </div>
+            </div>
+            
+            <!-- Corpo -->
+            <div class="px-6 py-6">
+                <p class="text-gray-700 text-base leading-relaxed">${escapeHtml(message)}</p>
+            </div>
+            
+            <!-- Botões -->
+            <div class="px-6 py-4 bg-gray-50 flex justify-end space-x-3">
+                ${onCancel ? `
+                    <button id="modalCancelBtn" class="px-5 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition font-medium">
+                        <i class="fas fa-times mr-2"></i>Cancelar
+                    </button>
+                ` : ''}
+                <button id="modalConfirmBtn" class="px-5 py-2 bg-gradient-to-r ${currentConfig.color} text-white rounded-lg transition transform hover:scale-105 font-medium shadow-md">
+                    <i class="fas ${type === 'question' ? 'fa-check' : 'fa-check-circle'} mr-2"></i>${onCancel ? 'Confirmar' : 'OK'}
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    const closeModal = () => {
+        modal.style.opacity = '0';
+        setTimeout(() => modal.remove(), 300);
+    };
+    
+    // Botão confirmar
+    document.getElementById('modalConfirmBtn')?.addEventListener('click', () => {
+        closeModal();
+        if (onConfirm) onConfirm();
+    });
+    
+    // Botão cancelar
+    if (onCancel) {
+        document.getElementById('modalCancelBtn')?.addEventListener('click', () => {
+            closeModal();
+            if (onCancel) onCancel();
+        });
+    }
+    
+    // Fechar ao clicar fora
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            closeModal();
+            if (onCancel) onCancel();
+        }
+    });
+}
+
+// Função para mostrar toast de notificação
+function showToast(type, message, duration = 3000) {
+    // Remover toasts antigos
+    const existingToasts = document.querySelectorAll('.custom-toast');
+    existingToasts.forEach(toast => toast.remove());
+    
+    const config = {
+        success: { icon: 'fa-check-circle', bg: 'bg-green-500' },
+        error: { icon: 'fa-exclamation-circle', bg: 'bg-red-500' },
+        warning: { icon: 'fa-exclamation-triangle', bg: 'bg-yellow-500' },
+        info: { icon: 'fa-info-circle', bg: 'bg-blue-500' }
+    };
+    
+    const currentConfig = config[type] || config.info;
+    
+    const toast = document.createElement('div');
+    toast.className = `custom-toast fixed top-20 right-4 px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300 transform translate-x-0 ${currentConfig.bg} text-white toast-slide-in`;
+    toast.innerHTML = `
+        <div class="flex items-center space-x-2">
+            <i class="fas ${currentConfig.icon} text-lg"></i>
+            <span>${escapeHtml(message)}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+        setTimeout(() => toast.remove(), 300);
+    }, duration);
+}
+
+// Função para mostrar detalhes em modal
+function showDetailsModal(reclamacao) {
+    const nomeUsuario = getUsuarioNome(reclamacao.usuario_id);
+    const statusCores = {
+        aberta: 'bg-yellow-100 text-yellow-800 border-yellow-300',
+        em_andamento: 'bg-blue-100 text-blue-800 border-blue-300',
+        resolvida: 'bg-green-100 text-green-800 border-green-300',
+        fechada: 'bg-gray-100 text-gray-800 border-gray-300'
+    };
+    
+    const statusColor = statusCores[reclamacao.status] || statusCores.aberta;
+    const dataCriacao = new Date(reclamacao.createdAt).toLocaleString('pt-PT');
+    const dataAtualizacao = new Date(reclamacao.updatedAt).toLocaleString('pt-PT');
+    
+    const modalContent = `
+        <div class="space-y-4">
+            <div class="flex justify-between items-start">
+                <h3 class="text-xl font-bold text-gray-800">${escapeHtml(reclamacao.titulo)}</h3>
+                <span class="px-3 py-1 rounded-full text-xs font-semibold ${statusColor}">
+                    ${reclamacao.status.replace('_', ' ').toUpperCase()}
+                </span>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-3 text-sm">
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-tag text-orange-500 w-4"></i>
+                    <span class="text-gray-600">Categoria:</span>
+                    <span class="font-medium">${escapeHtml(reclamacao.categoria)}</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-map-marker-alt text-orange-500 w-4"></i>
+                    <span class="text-gray-600">Local:</span>
+                    <span class="font-medium">${escapeHtml(reclamacao.local || 'Não informado')}</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-user text-orange-500 w-4"></i>
+                    <span class="text-gray-600">Usuário:</span>
+                    <span class="font-medium">${escapeHtml(nomeUsuario)}</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-hashtag text-orange-500 w-4"></i>
+                    <span class="text-gray-600">Protocolo:</span>
+                    <span class="font-medium">${reclamacao.protocolo || 'N/A'}</span>
+                </div>
+                <div class="flex items-center space-x-2 col-span-2">
+                    <i class="fas fa-calendar-alt text-orange-500 w-4"></i>
+                    <span class="text-gray-600">Criada em:</span>
+                    <span class="font-medium">${dataCriacao}</span>
+                </div>
+                <div class="flex items-center space-x-2 col-span-2">
+                    <i class="fas fa-clock text-orange-500 w-4"></i>
+                    <span class="text-gray-600">Atualizada em:</span>
+                    <span class="font-medium">${dataAtualizacao}</span>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-200 pt-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    <i class="fas fa-align-left text-orange-500 mr-2"></i>Descrição
+                </label>
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">${escapeHtml(reclamacao.descricao)}</p>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Criar modal de detalhes
+    const existingModal = document.getElementById('detailsModal');
+    if (existingModal) existingModal.remove();
+    
+    const modal = document.createElement('div');
+    modal.id = 'detailsModal';
+    modal.className = 'fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 backdrop-blur-sm';
+    modal.style.animation = 'fadeIn 0.3s ease';
+    
+    modal.innerHTML = `
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden modal-slide-in">
+            <div class="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-4 flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-file-alt text-white text-xl"></i>
+                    <h3 class="text-xl font-bold text-white">Detalhes da Reclamação</h3>
+                </div>
+                <button onclick="closeDetailsModal()" class="text-white hover:text-gray-200 transition">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+                ${modalContent}
+            </div>
+            <div class="px-6 py-4 bg-gray-50 flex justify-end">
+                <button onclick="closeDetailsModal()" class="px-5 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                    <i class="fas fa-times mr-2"></i>Fechar
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+function closeDetailsModal() {
+    const modal = document.getElementById('detailsModal');
+    if (modal) {
+        modal.style.opacity = '0';
+        setTimeout(() => modal.remove(), 300);
+    }
+}
+
+// ============================================
+// FUNÇÕES DE CARREGAMENTO DE CONTADORES
+// ============================================
+
+async function carregarContadoresDinamicos() {
+    try {
+        // Carregar contador de reclamações
+        const reclamacoesResponse = await fetch('http://localhost:3000/api/reclamacoes');
+        const reclamacoes = await reclamacoesResponse.json();
+        const totalReclamacoes = Array.isArray(reclamacoes) ? reclamacoes.length : 0;
+        
+        // Carregar contador de denúncias
+        const denunciasResponse = await fetch('http://localhost:3000/api/denuncias');
+        const denuncias = await denunciasResponse.json();
+        const totalDenuncias = Array.isArray(denuncias) ? denuncias.length : 0;
+        
+        // Carregar contador de usuários
+        const usuariosResponse = await fetch('http://localhost:3000/api/usuarios');
+        const usuarios = await usuariosResponse.json();
+        const totalUsuarios = Array.isArray(usuarios) ? usuarios.length : 0;
+        
+        // Atualizar badges no menu
+        const badgeReclamacoes = document.getElementById('badgeReclamacoes');
+        const badgeDenuncias = document.getElementById('badgeDenuncias');
+        const badgeUsuarios = document.getElementById('badgeUsuarios');
+        
+        if (badgeReclamacoes) {
+            badgeReclamacoes.innerText = totalReclamacoes;
+            badgeReclamacoes.style.display = totalReclamacoes > 0 ? 'inline-flex' : 'none';
+        }
+        
+        if (badgeDenuncias) {
+            badgeDenuncias.innerText = totalDenuncias;
+            badgeDenuncias.style.display = totalDenuncias > 0 ? 'inline-flex' : 'none';
+        }
+        
+        if (badgeUsuarios) {
+            badgeUsuarios.innerText = totalUsuarios;
+            badgeUsuarios.style.display = totalUsuarios > 0 ? 'inline-flex' : 'none';
+        }
+        
+        return { totalReclamacoes, totalDenuncias, totalUsuarios };
+    } catch (error) {
+        console.error('Erro ao carregar contadores:', error);
+        return { totalReclamacoes: 0, totalDenuncias: 0, totalUsuarios: 0 };
+    }
+}
+
+// ============================================
+// FUNÇÕES PRINCIPAIS
+// ============================================
 
 // Verificar administrador
 function verificarAdmin() {
     const usuarioLogado = sessionStorage.getItem('usuarioLogado');
     if (!usuarioLogado) {
-        window.location.href = '../login.html';
+        showModal('Acesso Negado', 'Você não está autenticado. Por favor, faça login.', 'error', () => {
+            window.location.href = '../login.html';
+        });
         return null;
     }
+    
     const usuario = JSON.parse(usuarioLogado);
     if (usuario.tipo !== 'admin') {
-        alert(' Acesso negado! Apenas administradores.');
-        window.location.href = '../aluno/dashboard.html';
+        showModal('Acesso Negado', 'Apenas administradores podem acessar esta página.', 'error', () => {
+            window.location.href = '../aluno/dashboard.html';
+        });
         return null;
     }
+    
     document.getElementById('adminNome').innerText = usuario.nome;
     return usuario;
 }
@@ -26,10 +311,11 @@ async function buscarReclamacoes() {
     try {
         const response = await fetch('http://localhost:3000/api/reclamacoes');
         const data = await response.json();
-        reclamacoesData = Array.isArray(data) ? data : [];
+        reclamacoesData = Array.isArray(data) ? data : (data.data || []);
         return reclamacoesData;
     } catch (error) {
         console.error('Erro ao buscar reclamações:', error);
+        showToast('error', 'Erro ao carregar reclamações');
         return [];
     }
 }
@@ -38,7 +324,7 @@ async function buscarUsuarios() {
     try {
         const response = await fetch('http://localhost:3000/api/usuarios');
         const data = await response.json();
-        usuariosData = Array.isArray(data) ? data : [];
+        usuariosData = Array.isArray(data) ? data : (data.data || []);
         return usuariosData;
     } catch (error) {
         console.error('Erro ao buscar usuários:', error);
@@ -46,55 +332,38 @@ async function buscarUsuarios() {
     }
 }
 
-
 // Obter nome de usuário por ID
-
 function getUsuarioNome(usuarioId) {
     if (!usuarioId) return 'Anônimo';
     const usuario = usuariosData.find(u => u.id === usuarioId);
     return usuario ? usuario.nome : 'Usuário não encontrado';
 }
 
-// Actualizar status
-
-async function atualizarStatus(id, novoStatus) {
-    try {
-        const response = await fetch(`http://localhost:3000/api/reclamacoes/${id}/status`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: novoStatus })
-        });
-        
-        if (response.ok) {
-            console.log(` Status da reclamação ${id} atualizado para: ${novoStatus}`);
-            showToast('success', `Status atualizado para ${novoStatus.replace('_', ' ')}`);
-            await carregarReclamacoes();
-        } else {
-            console.error('Erro ao atualizar status');
-            showToast('error', 'Erro ao atualizar status');
+// Atualizar status com confirmação
+function atualizarStatus(id, novoStatus) {
+    showModal('Confirmar Alteração', `Deseja alterar o status desta reclamação para "${novoStatus.replace('_', ' ').toUpperCase()}"?`, 'question', async () => {
+        try {
+            const response = await fetch(`http://localhost:3000/api/reclamacoes/${id}/status`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: novoStatus })
+            });
+            
+            if (response.ok) {
+                showToast('success', `Status atualizado para ${novoStatus.replace('_', ' ')}`);
+                await carregarReclamacoes();
+                await carregarContadoresDinamicos();
+            } else {
+                showToast('error', 'Erro ao atualizar status');
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            showToast('error', 'Erro ao conectar ao servidor');
         }
-    } catch (error) {
-        console.error('Erro:', error);
-        showToast('error', 'Erro ao conectar ao servidor');
-    }
+    });
 }
 
-// Toast de notificacões
-function showToast(type, message) {
-    const toast = document.createElement('div');
-    toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg text-white z-50 transition-all duration-300 ${
-        type === 'success' ? 'bg-green-500' : 'bg-red-500'
-    }`;
-    toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} mr-2"></i>${message}`;
-    document.body.appendChild(toast);
-    setTimeout(() => {
-        toast.classList.add('fade-out');
-        setTimeout(() => toast.remove(), 500);
-    }, 3000);
-}
-
-
-// Escape html
+// Escape HTML
 function escapeHtml(text) {
     if (!text) return '';
     const div = document.createElement('div');
@@ -106,10 +375,8 @@ function escapeHtml(text) {
 function renderizarReclamacoes(reclamacoes) {
     const container = document.getElementById('listaReclamacoes');
     const totalSpan = document.getElementById('totalReclamacoesTexto');
-    const badgeReclamacoes = document.getElementById('badgeReclamacoes');
     
     totalSpan.innerText = `${reclamacoes.length} reclamação(ões) encontrada(s)`;
-    badgeReclamacoes.innerText = reclamacoes.length;
     
     if (reclamacoes.length === 0) {
         container.innerHTML = `
@@ -130,13 +397,13 @@ function renderizarReclamacoes(reclamacoes) {
     };
     
     const categoriaLabels = {
-        infraestrutura: 'Infraestrutura',
-        saude: 'Saúde',
-        educacao: 'Educação',
-        'meio-ambiente': 'Meio Ambiente',
-        seguranca: 'Segurança',
-        saneamento: 'Saneamento',
-        outro: 'Outro'
+        infraestrutura: '🏗️ Infraestrutura',
+        saude: '🏥 Saúde',
+        educacao: '📚 Educação',
+        'meio-ambiente': '🌱 Meio Ambiente',
+        seguranca: '🔒 Segurança',
+        saneamento: '🚰 Saneamento',
+        outro: '📌 Outro'
     };
     
     let html = '';
@@ -144,12 +411,11 @@ function renderizarReclamacoes(reclamacoes) {
     reclamacoes.forEach(reclamacao => {
         const statusInfo = statusCores[reclamacao.status] || statusCores.aberta;
         const dataCriacao = new Date(reclamacao.createdAt).toLocaleDateString('pt-PT');
-        const dataAtualizacao = new Date(reclamacao.updatedAt).toLocaleDateString('pt-PT');
         const nomeUsuario = getUsuarioNome(reclamacao.usuario_id);
         const categoriaLabel = categoriaLabels[reclamacao.categoria] || reclamacao.categoria;
         
         html += `
-            <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition">
+            <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
                 <div class="px-6 py-4 bg-gradient-to-r ${statusInfo.bg} flex flex-wrap justify-between items-center gap-3">
                     <h3 class="text-lg font-bold text-white">${escapeHtml(reclamacao.titulo)}</h3>
                     <span class="px-3 py-1 ${statusInfo.badge} rounded-full text-xs font-semibold flex items-center status-badge">
@@ -159,37 +425,27 @@ function renderizarReclamacoes(reclamacoes) {
                 </div>
                 
                 <div class="p-6">
-                    <p class="text-gray-600 mb-4">${escapeHtml(reclamacao.descricao.substring(0, 200))}${reclamacao.descricao.length > 200 ? '...' : ''}</p>
+                    <p class="text-gray-600 mb-4">${escapeHtml(reclamacao.descricao.substring(0, 150))}${reclamacao.descricao.length > 150 ? '...' : ''}</p>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
                         <div class="flex items-center space-x-2 text-sm">
                             <i class="fas fa-tag text-orange-500 w-4"></i>
-                            <span class="text-gray-500">Categoria:</span>
                             <span class="text-gray-800 font-medium">${categoriaLabel}</span>
                         </div>
                         <div class="flex items-center space-x-2 text-sm">
                             <i class="fas fa-map-marker-alt text-orange-500 w-4"></i>
-                            <span class="text-gray-500">Local:</span>
                             <span class="text-gray-800 font-medium">${escapeHtml(reclamacao.local || 'Não informado')}</span>
                         </div>
                         <div class="flex items-center space-x-2 text-sm">
                             <i class="fas fa-user text-orange-500 w-4"></i>
-                            <span class="text-gray-500">Usuário:</span>
                             <span class="text-gray-800 font-medium">${escapeHtml(nomeUsuario)}</span>
                         </div>
                         <div class="flex items-center space-x-2 text-sm">
                             <i class="fas fa-calendar-alt text-orange-500 w-4"></i>
-                            <span class="text-gray-500">Criada:</span>
                             <span class="text-gray-800 font-medium">${dataCriacao}</span>
                         </div>
                         <div class="flex items-center space-x-2 text-sm">
-                            <i class="fas fa-clock text-orange-500 w-4"></i>
-                            <span class="text-gray-500">Atualizada:</span>
-                            <span class="text-gray-800 font-medium">${dataAtualizacao}</span>
-                        </div>
-                        <div class="flex items-center space-x-2 text-sm">
                             <i class="fas fa-hashtag text-orange-500 w-4"></i>
-                            <span class="text-gray-500">Protocolo:</span>
                             <span class="text-gray-800 font-medium">${reclamacao.protocolo || 'N/A'}</span>
                         </div>
                     </div>
@@ -198,10 +454,10 @@ function renderizarReclamacoes(reclamacoes) {
                         <div class="flex items-center space-x-3">
                             <span class="text-sm font-medium text-gray-700">Atualizar estado:</span>
                             <select id="statusSelect_${reclamacao.id}" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white">
-                                <option value="aberta" ${reclamacao.status === 'aberta' ? 'selected' : ''}>Aberta</option>
-                                <option value="em_andamento" ${reclamacao.status === 'em_andamento' ? 'selected' : ''}>Em andamento</option>
-                                <option value="resolvida" ${reclamacao.status === 'resolvida' ? 'selected' : ''}>Resolvida</option>
-                                <option value="fechada" ${reclamacao.status === 'fechada' ? 'selected' : ''}>Fechada</option>
+                                <option value="aberta" ${reclamacao.status === 'aberta' ? 'selected' : ''}>📋 Aberta</option>
+                                <option value="em_andamento" ${reclamacao.status === 'em_andamento' ? 'selected' : ''}>⚙️ Em andamento</option>
+                                <option value="resolvida" ${reclamacao.status === 'resolvida' ? 'selected' : ''}>✅ Resolvida</option>
+                                <option value="fechada" ${reclamacao.status === 'fechada' ? 'selected' : ''}>❌ Fechada</option>
                             </select>
                             <button onclick="atualizarStatus(${reclamacao.id}, document.getElementById('statusSelect_${reclamacao.id}').value)" 
                                     class="bg-orange-100 text-orange-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-orange-200 transition">
@@ -209,11 +465,10 @@ function renderizarReclamacoes(reclamacoes) {
                             </button>
                         </div>
                         
-                        <div class="flex space-x-2">
-                            <button onclick="verDetalhes(${reclamacao.id})" class="text-gray-400 hover:text-blue-600 transition p-2" title="Ver detalhes">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                        </div>
+                        <button onclick="showDetailsModal(reclamacoesData.find(r => r.id === ${reclamacao.id}))" 
+                                class="text-blue-600 hover:text-blue-800 transition p-2" title="Ver detalhes">
+                            <i class="fas fa-eye"></i> Ver detalhes
+                        </button>
                     </div>
                 </div>
             </div>
@@ -221,25 +476,6 @@ function renderizarReclamacoes(reclamacoes) {
     });
     
     container.innerHTML = html;
-}
-
-
-// Ver detalhes da reclamação
-function verDetalhes(id) {
-    const reclamacao = reclamacoesData.find(r => r.id === id);
-    if (reclamacao) {
-        const nomeUsuario = getUsuarioNome(reclamacao.usuario_id);
-        alert(`DETALHES DA RECLAMAÇÃO\n\n` +
-              `Protocolo: ${reclamacao.protocolo}\n` +
-              `Título: ${reclamacao.titulo}\n` +
-              `Descrição: ${reclamacao.descricao}\n` +
-              `Categoria: ${reclamacao.categoria}\n` +
-              `Local: ${reclamacao.local || 'Não informado'}\n` +
-              `Usuário: ${nomeUsuario}\n` +
-              `Status: ${reclamacao.status.replace('_', ' ')}\n` +
-              `Data de criação: ${new Date(reclamacao.createdAt).toLocaleDateString('pt-PT')}\n` +
-              `Última atualização: ${new Date(reclamacao.updatedAt).toLocaleDateString('pt-PT')}`);
-    }
 }
 
 // Aplicar filtros
@@ -270,12 +506,12 @@ function aplicarFiltros() {
     renderizarReclamacoes(filtradas);
 }
 
-// Carregar reclamação principal
+// Carregar reclamações principal
 async function carregarReclamacoes() {
     const container = document.getElementById('listaReclamacoes');
     container.innerHTML = `
-        <div class="loading">
-            <i class="fas fa-spinner spinner text-orange-600 text-4xl"></i>
+        <div class="flex justify-center items-center py-12">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
             <p class="ml-3 text-gray-500">Carregando reclamações...</p>
         </div>
     `;
@@ -283,122 +519,44 @@ async function carregarReclamacoes() {
     await buscarReclamacoes();
     await buscarUsuarios();
     renderizarReclamacoes(reclamacoesData);
-    
-    const badgeDenuncias = document.getElementById('badgeDenuncias');
-    if (badgeDenuncias) {
-        try {
-            const response = await fetch('http://localhost:3000/api/denuncias');
-            const denuncias = await response.json();
-            badgeDenuncias.innerText = Array.isArray(denuncias) ? denuncias.length : 0;
-        } catch (e) {
-            console.error('Erro ao buscar denúncias:', e);
-        }
-    }
-    
-    const badgeUsuarios = document.getElementById('badgeUsuarios');
-    if (badgeUsuarios) {
-        try {
-            const response = await fetch('http://localhost:3000/api/usuarios');
-            const usuarios = await response.json();
-            badgeUsuarios.innerText = Array.isArray(usuarios) ? usuarios.length : 0;
-        } catch (e) {
-            console.error('Erro ao buscar usuários:', e);
-        }
-    }
+    await carregarContadoresDinamicos();
 }
 
+// ============================================
+// LOGOUT COM CONFIRMAÇÃO MODERNA
+// ============================================
 
-// Logout
 function logout() {
-    // Criar modal de confirmação
-    const existingModal = document.getElementById('logoutConfirmModal');
-    if (existingModal) existingModal.remove();
-    
-    const modal = document.createElement('div');
-    modal.id = 'logoutConfirmModal';
-    modal.className = 'fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 backdrop-blur-sm';
-    modal.style.animation = 'fadeIn 0.3s ease';
-    
-    // Adicionar estilos
-    if (!document.getElementById('logoutStyles')) {
-        const style = document.createElement('style');
-        style.id = 'logoutStyles';
-        style.textContent = `
-            @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-            @keyframes slideIn { from { transform: translateY(-50px) scale(0.9); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
-            @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-            .modal-slide-in { animation: slideIn 0.3s ease; }
-            .toast-slide-in { animation: slideInRight 0.3s ease; }
-        `;
-        document.head.appendChild(style);
-    }
-    
-    modal.innerHTML = `
-        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden modal-slide-in">
-            <!-- Cabeçalho -->
-            <div class="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-4">
-                <div class="flex items-center space-x-3">
-                    <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg">
-                        <i class="fas fa-sign-out-alt text-orange-500 text-2xl"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-white">Sair do Sistema</h3>
-                </div>
-            </div>
-            
-            <!-- Corpo -->
-            <div class="px-6 py-6 text-center">
-                <i class="fas fa-question-circle text-orange-500 text-5xl mb-4"></i>
-                <p class="text-gray-700 text-base mb-2">Tem certeza que deseja sair?</p>
-                <p class="text-gray-500 text-sm">Você será redirecionado para a página de login.</p>
-            </div>
-            
-            <!-- Botões -->
-            <div class="px-6 py-4 bg-gray-50 flex justify-end space-x-3">
-                <button id="logoutCancelBtn" class="px-5 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition font-medium">
-                    <i class="fas fa-times mr-2"></i>Cancelar
-                </button>
-                <button id="logoutConfirmBtn" class="px-5 py-2 bg-orange-500 text-white rounded-lg transition transform hover:scale-105 font-medium shadow-md">
-                    <i class="fas fa-check mr-2"></i>Sair
-                </button>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-    
-    const closeModal = () => {
-        modal.style.opacity = '0';
-        setTimeout(() => modal.remove(), 300);
-    };
-    
-    // Confirmar logout
-    document.getElementById('logoutConfirmBtn')?.addEventListener('click', () => {
-        closeModal();
-        
-        // Mostrar toast de sucesso
-        const toast = document.createElement('div');
-        toast.className = 'fixed top-20 right-4 px-6 py-3 rounded-lg shadow-lg z-50 bg-green-500 text-white toast-slide-in';
-        toast.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Sessão encerrada com sucesso!';
-        document.body.appendChild(toast);
-        
-        setTimeout(() => toast.remove(), 1500);
-        
-        // Limpar sessão e REDIRECIONAR PARA O LOGIN
+    showModal('Sair do Sistema', 'Tem certeza que deseja encerrar sua sessão?', 'question', () => {
+        showToast('success', 'Sessão encerrada com sucesso!');
         setTimeout(() => {
             sessionStorage.removeItem('usuarioLogado');
             sessionStorage.removeItem('token');
             window.location.href = '../login.html';
         }, 500);
     });
-    
-    // Cancelar logout
-    document.getElementById('logoutCancelBtn')?.addEventListener('click', closeModal);
-    
-    // Fechar ao clicar fora
-    modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 }
 
-// Inicialização
+// ============================================
+// ATUALIZAÇÃO PERIÓDICA DOS CONTADORES
+// ============================================
+
+let intervaloAtualizacao = null;
+
+function iniciarAtualizacaoPeriodica() {
+    if (intervaloAtualizacao) clearInterval(intervaloAtualizacao);
+    
+    // Atualizar contadores a cada 30 segundos
+    intervaloAtualizacao = setInterval(async () => {
+        await carregarContadoresDinamicos();
+        console.log('🔄 Contadores atualizados automaticamente');
+    }, 30000);
+}
+
+// ============================================
+// INICIALIZAÇÃO
+// ============================================
+
 async function init() {
     const admin = verificarAdmin();
     if (!admin) return;
@@ -414,6 +572,51 @@ async function init() {
     if (filtroCategoria) filtroCategoria.addEventListener('change', aplicarFiltros);
     
     await carregarReclamacoes();
+    iniciarAtualizacaoPeriodica();
+    
+    showToast('success', 'Bem-vindo ao painel administrativo!');
 }
+
+// Adicionar estilos CSS dinâmicos
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    @keyframes slideIn {
+        from { transform: translateY(-50px) scale(0.9); opacity: 0; }
+        to { transform: translateY(0) scale(1); opacity: 1; }
+    }
+    @keyframes slideInRight {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    .modal-slide-in {
+        animation: slideIn 0.3s ease;
+    }
+    .toast-slide-in {
+        animation: slideInRight 0.3s ease;
+    }
+    .custom-toast {
+        animation: slideInRight 0.3s ease;
+    }
+    .spinner {
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+`;
+document.head.appendChild(style);
+
+// Exportar funções globais
+window.atualizarStatus = atualizarStatus;
+window.verDetalhes = showDetailsModal;
+window.logout = logout;
+window.showDetailsModal = showDetailsModal;
+window.closeDetailsModal = closeDetailsModal;
+window.reclamacoesData = () => reclamacoesData;
 
 document.addEventListener('DOMContentLoaded', init);

@@ -48,10 +48,10 @@ async function carregarPerfil() {
         // Atualizar informações na navbar
         atualizarNavbar();
         
-        console.log('✅ Perfil carregado com sucesso!');
+        console.log(' Perfil carregado com sucesso!');
         
     } catch (error) {
-        console.error('❌ Erro ao carregar perfil:', error);
+        console.error(' Erro ao carregar perfil:', error);
         // Se falhar, usa os dados do sessionStorage
         preencherDadosPerfil();
         atualizarNavbar();

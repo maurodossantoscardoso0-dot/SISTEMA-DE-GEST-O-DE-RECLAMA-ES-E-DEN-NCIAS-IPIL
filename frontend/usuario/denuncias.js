@@ -401,7 +401,7 @@ function verDetalhes(id) {
     const modalHtml = `
         <div class="space-y-3">
             <div class="flex items-center justify-between pb-3 border-b">
-                <h3 class="text-lg font-bold text-gray-800">📋 Detalhes da Denúncia</h3>
+                <h3 class="text-lg font-bold text-gray-800"> Detalhes da Denúncia</h3>
                 <span class="px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(denuncia.status)}">
                     ${translateStatus(denuncia.status)}
                 </span>
