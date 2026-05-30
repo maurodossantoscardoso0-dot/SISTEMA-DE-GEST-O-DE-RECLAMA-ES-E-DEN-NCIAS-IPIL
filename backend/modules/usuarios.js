@@ -1,516 +1,530 @@
 const express = require('express');
-const { DataTypes } = require('sequelize');
-const bcrypt = require('bcrypt');
+const { DataTypes, Op } = require('sequelize');
 const sequelize = require('../db');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+
 const router = express.Router();
 
-// ============================================
-// FUNÇÃO PARA CONVERTER DATA DD/MM/YYYY PARA YYYY-MM-DD
-// ============================================
-function converterDataParaMySQL(dataBrasil) {
-    if (!dataBrasil) return null;
-    if (dataBrasil.match(/^\d{4}-\d{2}-\d{2}$/)) return dataBrasil;
-    
-    const partes = dataBrasil.split('/');
-    if (partes.length === 3) {
-        const dia = partes[0].padStart(2, '0');
-        const mes = partes[1].padStart(2, '0');
-        const ano = partes[2];
-        return `${ano}-${mes}-${dia}`;
-    }
-    return null;
-}
-
-// Definição do model Usuario
-const Usuario = sequelize.define('usuario', {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true
-  },
-  nome: {
-    type: DataTypes.STRING(100),
-    allowNull: false
-  },
-  email: {
-    type: DataTypes.STRING(100),
-    allowNull: false,
-    unique: true
-  },
-  senha: {
-    type: DataTypes.STRING(255),
-    allowNull: false
-  },
-  ano_nascimento: {
-    type: DataTypes.DATEONLY,
-    allowNull: true,
-    field: 'ano_nascimento',
-    get() {
-      const rawValue = this.getDataValue('ano_nascimento');
-      if (!rawValue) return null;
-      const data = new Date(rawValue);
-      const dia = data.getDate().toString().padStart(2, '0');
-      const mes = (data.getMonth() + 1).toString().padStart(2, '0');
-      const ano = data.getFullYear();
-      return `${dia}/${mes}/${ano}`;
+// Definição do modelo Usuario
+const Usuario = sequelize.define('Usuario', {
+    id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true
     },
-    set(val) {
-      const convertida = converterDataParaMySQL(val);
-      this.setDataValue('ano_nascimento', convertida);
+    nome: {
+        type: DataTypes.STRING(100),
+        allowNull: false,
+        validate: {
+            notEmpty: true,
+            len: [3, 100]
+        }
+    },
+    email: {
+        type: DataTypes.STRING(100),
+        allowNull: false,
+        unique: true,
+        validate: {
+            isEmail: true
+        }
+    },
+    senha: {
+        type: DataTypes.STRING(255),
+        allowNull: false
+    },
+    tipo: {
+        type: DataTypes.ENUM('admin', 'usuario'),
+        defaultValue: 'usuario'
+    },
+    status: {
+        type: DataTypes.ENUM('ativo', 'bloqueado', 'pendente'),
+        defaultValue: 'ativo'
+    },
+    numero_processo: {
+        type: DataTypes.STRING(20),
+        unique: true,
+        allowNull: false
+    },
+    telefone: {
+        type: DataTypes.STRING(20),
+        allowNull: true
+    },
+    ano_nascimento: {
+        type: DataTypes.DATEONLY,
+        allowNull: true
+    },
+    sexo: {
+        type: DataTypes.ENUM('masculino', 'feminino'),
+        allowNull: true
+    },
+    curso: {
+        type: DataTypes.STRING(100),
+        allowNull: true
+    },
+    classe: {
+        type: DataTypes.STRING(20),
+        allowNull: true
+    },
+    turma: {
+        type: DataTypes.STRING(10),
+        allowNull: true
+    },
+    sala: {
+        type: DataTypes.STRING(10),
+        allowNull: true
+    },
+    foto_perfil: {
+        type: DataTypes.TEXT('long'),
+        allowNull: true,
+        validate: {
+            isValidBase64(value) {
+                if (value && !value.startsWith('data:image/')) {
+                    throw new Error('Formato de imagem inválido');
+                }
+            }
+        }
+    },
+    ultimo_acesso: {
+        type: DataTypes.DATE,
+        allowNull: true
     }
-  },
-  sexo: {
-    type: DataTypes.ENUM('masculino', 'feminino'),
-    allowNull: true
-  },
-  curso: {
-    type: DataTypes.STRING(100),
-    allowNull: true
-  },
-  numero_processo: {
-    type: DataTypes.STRING(10),
-    allowNull: true,
-    unique: true,
-    field: 'numero_processo'
-  },
-  classe: {
-    type: DataTypes.ENUM('decima', 'decima_primeira', 'decima_segunda', 'decima_terceira'),
-    allowNull: true
-  },
-  turma: {
-    type: DataTypes.STRING(20),
-    allowNull: true
-  },
-  sala: {
-    type: DataTypes.STRING(20),
-    allowNull: true
-  },
-  telefone: {
-    type: DataTypes.STRING(20),
-    allowNull: true
-  },
-  cpf: {
-    type: DataTypes.STRING(14),
-    unique: true,
-    allowNull: true
-  },
-  endereco: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
-  tipo: {
-    type: DataTypes.ENUM('cidadao', 'funcionario', 'admin'),
-    defaultValue: 'cidadao'
-  },
-  status: {
-    type: DataTypes.ENUM('ativo', 'inativo', 'bloqueado'),
-    defaultValue: 'ativo'
-  },
-  ultimo_acesso: {
-    type: DataTypes.DATE,
-    allowNull: true
-  },
-  motivo_bloqueio: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
-  bloqueado_por: {
-    type: DataTypes.STRING(100),
-    allowNull: true
-  }
 }, {
-  tableName: 'usuarios',
-  timestamps: true,
-  createdAt: 'created_at',
-  updatedAt: 'updated_at',
-  hooks: {
-    beforeCreate: async (usuario) => {
-      if (usuario.senha) {
-        const saltRounds = 10;
-        const hash = await bcrypt.hash(usuario.senha, saltRounds);
-        usuario.senha = hash;
-      }
-    },
-    beforeUpdate: async (usuario) => {
-      if (usuario.changed('senha') && usuario.senha) {
-        const saltRounds = 10;
-        const hash = await bcrypt.hash(usuario.senha, saltRounds);
-        usuario.senha = hash;
-      }
+    tableName: 'usuarios',
+    hooks: {
+        beforeCreate: async (usuario) => {
+            if (usuario.senha) {
+                const salt = await bcrypt.genSalt(10);
+                usuario.senha = await bcrypt.hash(usuario.senha, salt);
+            }
+        },
+        beforeUpdate: async (usuario) => {
+            if (usuario.changed('senha')) {
+                const salt = await bcrypt.genSalt(10);
+                usuario.senha = await bcrypt.hash(usuario.senha, salt);
+            }
+        }
     }
-  }
 });
 
-// ============================================
-// MÉTODO PARA VERIFICAR SENHA
-// ============================================
-Usuario.prototype.verificarSenha = async function(senhaDigitada) {
-  return await bcrypt.compare(senhaDigitada, this.senha);
-};
+// ==================== ROTAS DA API ====================
 
-// ============================================
-// MÉTODO ESTÁTICO PARA LOGIN
-// ============================================
-Usuario.login = async function(numero_processo, senha) {
-  try {
-    const user = await Usuario.findOne({ 
-      where: { numero_processo: numero_processo.toString() } 
-    });
-    
-    if (!user) {
-      return { success: false, error: 'Usuário não encontrado' };
-    }
-    
-    if (user.status !== 'ativo') {
-      return { success: false, error: `Esta conta está ${user.status}` };
-    }
-    
-    const senhaValida = await bcrypt.compare(senha, user.senha);
-    
-    if (!senhaValida) {
-      return { success: false, error: 'Senha inválida' };
-    }
-    
-    await user.update({ ultimo_acesso: new Date() });
-    
-    const usuarioData = user.toJSON();
-    delete usuarioData.senha;
-    
-    return { success: true, usuario: usuarioData };
-  } catch (error) {
-    console.error('Erro no login:', error);
-    return { success: false, error: error.message };
-  }
-};
-
-// ============================================
-// ROTA DE CADASTRO - ACEITA DATA DD/MM/YYYY
-// ============================================
-router.post('/', async (req, res) => {
-  try {
-    console.log('📝 Dados recebidos:', JSON.stringify(req.body, null, 2));
-    
-    // 🔥 IMPORTANTE: A data já será convertida automaticamente pelo getter/setter do modelo
-    const usuario = await Usuario.create(req.body);
-    
-    const usuarioSemSenha = usuario.toJSON();
-    delete usuarioSemSenha.senha;
-    
-    console.log('✅ Usuário cadastrado com sucesso! ID:', usuario.id);
-    
-    res.status(201).json({
-      success: true,
-      message: 'Usuário cadastrado com sucesso!',
-      usuario: usuarioSemSenha
-    });
-    
-  } catch (error) {
-    console.error('❌ Erro no cadastro:', error);
-    
-    if (error.name === 'SequelizeUniqueConstraintError') {
-      return res.status(400).json({ 
-        success: false,
-        error: 'Email ou número de processo já está cadastrado' 
-      });
-    }
-    
-    if (error.name === 'SequelizeValidationError') {
-      return res.status(400).json({ 
-        success: false,
-        error: error.errors.map(e => e.message).join(', ')
-      });
-    }
-    
-    res.status(400).json({ 
-      success: false,
-      error: error.message 
-    });
-  }
-});
-
-// ROTA DE LOGIN
-router.post('/login', async (req, res) => {
-  try {
-    const { numero_processo, senha } = req.body;
-    
-    if (!numero_processo || !senha) {
-      return res.status(400).json({ 
-        success: false,
-        error: 'Número de processo e senha são obrigatórios' 
-      });
-    }
-    
-    const resultado = await Usuario.login(numero_processo, senha);
-    
-    if (resultado.success) {
-      res.json({
-        success: true,
-        message: 'Login realizado com sucesso!',
-        usuario: resultado.usuario
-      });
-    } else {
-      res.status(401).json({ 
-        success: false,
-        error: resultado.error 
-      });
-    }
-    
-  } catch (error) {
-    console.error('❌ Erro no login:', error);
-    res.status(500).json({ 
-      success: false,
-      error: 'Erro interno no servidor: ' + error.message 
-    });
-  }
-});
-
-// Listar todos os usuários
+// Listar todos os usuários (GET /api/usuarios)
 router.get('/', async (req, res) => {
-  try {
-    const usuarios = await Usuario.findAll({
-      attributes: { exclude: ['senha'] },
-      order: [['nome', 'ASC']]
-    });
-    res.json(usuarios);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+    try {
+        const { online } = req.query;
+        const where = {};
+
+        if (online === 'true') {
+            const limite = new Date(Date.now() - 30 * 60 * 1000);
+            where.ultimo_acesso = {
+                [Op.gte]: limite
+            };
+        }
+
+        const usuarios = await Usuario.findAll({
+            where,
+            attributes: { exclude: ['senha'] },
+            order: [['createdAt', 'DESC']]
+        });
+        
+        res.json({
+            success: true,
+            data: usuarios
+        });
+    } catch (error) {
+        console.error('Erro ao listar usuários:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
+    }
 });
 
-// Buscar usuário por ID
+// Criar novo usuário (POST /api/usuarios)
+router.post('/', async (req, res) => {
+    try {
+        const { nome, email, senha, numero_processo, telefone, tipo } = req.body;
+        
+        // Validações
+        if (!nome || !email || !senha || !numero_processo) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'Nome, email, senha e número de processo são obrigatórios' 
+            });
+        }
+        
+        // Verificar se email já existe
+        const emailExiste = await Usuario.findOne({ where: { email } });
+        if (emailExiste) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'Email já cadastrado' 
+            });
+        }
+        
+        // Verificar se número de processo já existe
+        const processoExiste = await Usuario.findOne({ where: { numero_processo } });
+        if (processoExiste) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'Número de processo já cadastrado' 
+            });
+        }
+        
+        const usuario = await Usuario.create({
+            nome,
+            email,
+            senha,
+            numero_processo,
+            telefone: telefone || null,
+            tipo: tipo || 'usuario',
+            status: 'ativo'
+        });
+        
+        const usuarioResponse = usuario.toJSON();
+        delete usuarioResponse.senha;
+        
+        res.status(201).json({
+            success: true,
+            message: 'Usuário criado com sucesso',
+            data: usuarioResponse
+        });
+        
+    } catch (error) {
+        console.error('Erro ao criar usuário:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
+    }
+});
+
+// Login (POST /api/usuarios/login)
+router.post('/login', async (req, res) => {
+    try {
+        const { email, senha, numero_processo } = req.body;
+        
+        let usuario;
+        
+        if (numero_processo) {
+            usuario = await Usuario.findOne({ 
+                where: { numero_processo: numero_processo }
+            });
+        } else if (email) {
+            usuario = await Usuario.findOne({ 
+                where: { email: email }
+            });
+        } else {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'Email ou número de processo é obrigatório' 
+            });
+        }
+        
+        if (!usuario) {
+            return res.status(401).json({ 
+                success: false, 
+                error: 'Credenciais inválidas' 
+            });
+        }
+        
+        const senhaValida = await bcrypt.compare(senha, usuario.senha);
+        
+        if (!senhaValida) {
+            return res.status(401).json({ 
+                success: false, 
+                error: 'Credenciais inválidas' 
+            });
+        }
+        
+        if (usuario.status === 'bloqueado') {
+            return res.status(403).json({ 
+                success: false, 
+                error: 'Usuário bloqueado. Contate o administrador.' 
+            });
+        }
+        
+        // Atualizar último acesso
+        usuario.ultimo_acesso = new Date();
+        await usuario.save();
+        
+        // Gerar token JWT
+        const token = jwt.sign(
+            { 
+                id: usuario.id, 
+                email: usuario.email, 
+                tipo: usuario.tipo 
+            },
+            process.env.JWT_SECRET || 'seu-segredo-jwt',
+            { expiresIn: '24h' }
+        );
+        
+        // Retornar dados sem senha
+        const usuarioResponse = usuario.toJSON();
+        delete usuarioResponse.senha;
+        
+        res.json({
+            success: true,
+            message: 'Login realizado com sucesso',
+            token,
+            usuario: usuarioResponse
+        });
+        
+    } catch (error) {
+        console.error('Erro no login:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
+    }
+});
+
+// Buscar usuário por ID (GET /api/usuarios/:id)
 router.get('/:id', async (req, res) => {
-  try {
-    const user = await Usuario.findByPk(req.params.id, {
-      attributes: { exclude: ['senha'] }
-    });
-    if (user) {
-      res.json(user);
-    } else {
-      res.status(404).json({ error: 'Usuário não encontrado' });
+    try {
+        const { id } = req.params;
+        
+        const usuario = await Usuario.findByPk(id, {
+            attributes: { exclude: ['senha'] }
+        });
+        
+        if (!usuario) {
+            return res.status(404).json({ 
+                success: false, 
+                error: 'Usuário não encontrado' 
+            });
+        }
+        
+        res.json({
+            success: true,
+            data: usuario
+        });
+        
+    } catch (error) {
+        console.error('Erro ao buscar usuário:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
     }
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
 });
 
-// Buscar usuário por email
-router.get('/email/:email', async (req, res) => {
-  try {
-    const user = await Usuario.findOne({
-      where: { email: req.params.email },
-      attributes: { exclude: ['senha'] }
-    });
-    if (user) {
-      res.json(user);
-    } else {
-      res.status(404).json({ error: 'Usuário não encontrado' });
-    }
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Buscar usuário por número de processo
-router.get('/processo/:numero_processo', async (req, res) => {
-  try {
-    const user = await Usuario.findOne({
-      where: { numero_processo: req.params.numero_processo },
-      attributes: { exclude: ['senha'] }
-    });
-    if (user) {
-      res.json(user);
-    } else {
-      res.status(404).json({ error: 'Usuário não encontrado' });
-    }
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Atualizar usuário
+// Atualizar usuário (PUT /api/usuarios/:id)
 router.put('/:id', async (req, res) => {
-  try {
-    const user = await Usuario.findByPk(req.params.id);
-    if (user) {
-      await user.update(req.body);
-      
-      const usuarioSemSenha = user.toJSON();
-      delete usuarioSemSenha.senha;
-      
-      res.json({
-        success: true,
-        message: 'Usuário atualizado com sucesso!',
-        usuario: usuarioSemSenha
-      });
-    } else {
-      res.status(404).json({ 
-        success: false,
-        error: 'Usuário não encontrado' 
-      });
-    }
-  } catch (error) {
-    console.error('Erro ao atualizar:', error);
-    res.status(400).json({ 
-      success: false,
-      error: error.message 
-    });
-  }
-});
-
-// Deletar usuário
-router.delete('/:id', async (req, res) => {
-  try {
-    const user = await Usuario.findByPk(req.params.id);
-    if (user) {
-      await user.destroy();
-      res.json({ 
-        success: true,
-        message: 'Usuário removido com sucesso' 
-      });
-    } else {
-      res.status(404).json({ 
-        success: false,
-        error: 'Usuário não encontrado' 
-      });
-    }
-  } catch (error) {
-    console.error('Erro ao deletar:', error);
-    res.status(500).json({ 
-      success: false,
-      error: error.message 
-    });
-  }
-});
-
-// EXCLUSÃO COMPLETA
-router.delete('/:id/completo', async (req, res) => {
-  const transaction = await sequelize.transaction();
-  
-  try {
-    const user = await Usuario.findByPk(req.params.id, { transaction });
-    
-    if (!user) {
-      await transaction.rollback();
-      return res.status(404).json({ 
-        success: false,
-        error: 'Usuário não encontrado' 
-      });
-    }
-    
-    if (user.tipo === 'admin') {
-      await transaction.rollback();
-      return res.status(403).json({
-        success: false,
-        error: 'Não é possível excluir usuários administradores'
-      });
-    }
-    
-    let denunciasCount = 0;
-    let reclamacoesCount = 0;
-    
     try {
-      const [denunciasResult] = await sequelize.query(
-        'DELETE FROM denuncias WHERE usuario_id = :usuario_id',
-        { replacements: { usuario_id: user.id }, transaction }
-      );
-      denunciasCount = denunciasResult.affectedRows || 0;
-    } catch (err) {}
-    
-    try {
-      const [reclamacoesResult] = await sequelize.query(
-        'DELETE FROM reclamacoes WHERE usuario_id = :usuario_id',
-        { replacements: { usuario_id: user.id }, transaction }
-      );
-      reclamacoesCount = reclamacoesResult.affectedRows || 0;
-    } catch (err) {}
-    
-    const nomeUsuario = user.nome;
-    await user.destroy({ transaction });
-    await transaction.commit();
-    
-    res.json({ 
-      success: true,
-      message: `✅ Usuário "${nomeUsuario}" excluído completamente!`
-    });
-    
-  } catch (error) {
-    await transaction.rollback();
-    res.status(500).json({ 
-      success: false,
-      error: 'Erro ao excluir usuário: ' + error.message 
-    });
-  }
+        const { id } = req.params;
+        const { 
+            nome, 
+            telefone, 
+            ano_nascimento, 
+            sexo, 
+            curso, 
+            classe, 
+            turma, 
+            sala,
+            foto_perfil,
+            senhaAtual,
+            novaSenha
+        } = req.body;
+        
+        const usuario = await Usuario.findByPk(id);
+        
+        if (!usuario) {
+            return res.status(404).json({ 
+                success: false, 
+                error: 'Usuário não encontrado' 
+            });
+        }
+        
+        // Caso seja alteração de senha
+        if (senhaAtual && novaSenha) {
+            const senhaValida = await bcrypt.compare(senhaAtual, usuario.senha);
+            if (!senhaValida) {
+                return res.status(401).json({ 
+                    success: false, 
+                    error: 'Senha atual incorreta' 
+                });
+            }
+            
+            const salt = await bcrypt.genSalt(10);
+            usuario.senha = await bcrypt.hash(novaSenha, salt);
+        }
+        
+        // Atualizar campos permitidos
+        if (nome) usuario.nome = nome;
+        if (telefone) usuario.telefone = telefone;
+        if (ano_nascimento) usuario.ano_nascimento = ano_nascimento;
+        if (sexo) usuario.sexo = sexo;
+        if (curso) usuario.curso = curso;
+        if (classe) usuario.classe = classe;
+        if (turma) usuario.turma = turma;
+        if (sala) usuario.sala = sala;
+        
+        // Tratar foto de perfil
+        if (foto_perfil !== undefined) {
+            // Se for null ou string vazia, remove a foto
+            if (foto_perfil === null || foto_perfil === '') {
+                usuario.foto_perfil = null;
+            } 
+            // Se for uma string Base64 válida, salva
+            else if (typeof foto_perfil === 'string' && foto_perfil.startsWith('data:image/')) {
+                // Validar tamanho (máximo 5MB em Base64)
+                const tamanhoAproximado = (foto_perfil.length * 3) / 4;
+                if (tamanhoAproximado > 5 * 1024 * 1024) {
+                    return res.status(400).json({
+                        success: false,
+                        error: 'A imagem deve ter no máximo 5MB'
+                    });
+                }
+                usuario.foto_perfil = foto_perfil;
+            }
+        }
+        
+        await usuario.save();
+        
+        // Retornar usuário sem a senha
+        const usuarioResponse = usuario.toJSON();
+        delete usuarioResponse.senha;
+        
+        res.json({
+            success: true,
+            message: 'Usuário atualizado com sucesso',
+            data: usuarioResponse
+        });
+        
+    } catch (error) {
+        console.error('Erro ao atualizar usuário:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
+    }
 });
 
-// BLOQUEAR USUÁRIO
+// Bloquear usuário (PUT /api/usuarios/:id/bloquear)
 router.put('/:id/bloquear', async (req, res) => {
-  try {
-    const user = await Usuario.findByPk(req.params.id);
-    
-    if (!user) {
-      return res.status(404).json({ 
-        success: false,
-        error: 'Usuário não encontrado' 
-      });
+    try {
+        const { id } = req.params;
+        
+        const usuario = await Usuario.findByPk(id);
+        
+        if (!usuario) {
+            return res.status(404).json({ 
+                success: false, 
+                error: 'Usuário não encontrado' 
+            });
+        }
+        
+        usuario.status = 'bloqueado';
+        await usuario.save();
+        
+        res.json({
+            success: true,
+            message: 'Usuário bloqueado com sucesso',
+            data: { id: usuario.id, status: usuario.status }
+        });
+        
+    } catch (error) {
+        console.error('Erro ao bloquear usuário:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
     }
-    
-    await user.update({
-      status: 'bloqueado',
-      motivo_bloqueio: req.body.motivo_bloqueio || 'Motivo não informado',
-      bloqueado_por: req.body.bloqueado_por || 'Administrador'
-    });
-    
-    const usuarioSemSenha = user.toJSON();
-    delete usuarioSemSenha.senha;
-    
-    res.json({
-      success: true,
-      message: 'Usuário bloqueado com sucesso',
-      usuario: usuarioSemSenha
-    });
-    
-  } catch (error) {
-    res.status(500).json({ 
-      success: false,
-      error: error.message 
-    });
-  }
 });
 
-// ATIVAR USUÁRIO
+// Ativar usuário (PUT /api/usuarios/:id/ativar)
 router.put('/:id/ativar', async (req, res) => {
-  try {
-    const user = await Usuario.findByPk(req.params.id);
-    
-    if (!user) {
-      return res.status(404).json({ 
-        success: false,
-        error: 'Usuário não encontrado' 
-      });
+    try {
+        const { id } = req.params;
+        
+        const usuario = await Usuario.findByPk(id);
+        
+        if (!usuario) {
+            return res.status(404).json({ 
+                success: false, 
+                error: 'Usuário não encontrado' 
+            });
+        }
+        
+        usuario.status = 'ativo';
+        await usuario.save();
+        
+        res.json({
+            success: true,
+            message: 'Usuário ativado com sucesso',
+            data: { id: usuario.id, status: usuario.status }
+        });
+        
+    } catch (error) {
+        console.error('Erro ao ativar usuário:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
     }
-    
-    await user.update({
-      status: 'ativo',
-      motivo_bloqueio: null,
-      bloqueado_por: null
-    });
-    
-    const usuarioSemSenha = user.toJSON();
-    delete usuarioSemSenha.senha;
-    
-    res.json({
-      success: true,
-      message: 'Usuário ativado com sucesso',
-      usuario: usuarioSemSenha
-    });
-    
-  } catch (error) {
-    res.status(500).json({ 
-      success: false,
-      error: error.message 
-    });
-  }
 });
 
-module.exports = router;
-module.exports.Usuario = Usuario;
+// Excluir usuário (DELETE /api/usuarios/:id)
+router.delete('/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const usuario = await Usuario.findByPk(id);
+        
+        if (!usuario) {
+            return res.status(404).json({ 
+                success: false, 
+                error: 'Usuário não encontrado' 
+            });
+        }
+        
+        await usuario.destroy();
+        
+        res.json({
+            success: true,
+            message: 'Usuário excluído com sucesso'
+        });
+        
+    } catch (error) {
+        console.error('Erro ao excluir usuário:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
+    }
+});
+
+// Excluir usuário completamente com todos os dados (DELETE /api/usuarios/:id/completo)
+router.delete('/:id/completo', async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const usuario = await Usuario.findByPk(id);
+        
+        if (!usuario) {
+            return res.status(404).json({ 
+                success: false, 
+                error: 'Usuário não encontrado' 
+            });
+        }
+        
+        // O CASCADE do banco vai deletar denúncias e reclamações relacionadas
+        await usuario.destroy();
+        
+        res.json({
+            success: true,
+            message: 'Usuário e todos os seus dados foram excluídos permanentemente'
+        });
+        
+    } catch (error) {
+        console.error('Erro ao excluir usuário completo:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
+    }
+});
+
+module.exports = { Usuario, router };

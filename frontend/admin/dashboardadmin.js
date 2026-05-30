@@ -1,4 +1,4 @@
-// dashboard.js - Script do Painel Administrativo
+// dashboardAdmin.js - Script do Painel Administrativo
 
 // Variáveis globais
 let denunciasData = [];
@@ -92,6 +92,194 @@ function showModal(type, title, message, onConfirm = null) {
     modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 }
 
+function formatFileSize(bytes) {
+    if (!bytes || isNaN(bytes)) return '';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let value = Number(bytes);
+    let unitIndex = 0;
+    while (value >= 1024 && unitIndex < units.length - 1) {
+        value /= 1024;
+        unitIndex += 1;
+    }
+    return `${value.toFixed(1).replace('.0', '')} ${units[unitIndex]}`;
+}
+
+function escapeHtml(text) {
+    if (text === null || text === undefined) return '';
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function getStatusColor(status) {
+    switch ((status || '').toLowerCase()) {
+        case 'aprovado': return 'bg-green-100 text-green-700';
+        case 'rejeitado': return 'bg-red-100 text-red-700';
+        case 'em_analise':
+        case 'em análise': return 'bg-yellow-100 text-yellow-700';
+        case 'pendente': return 'bg-orange-100 text-orange-700';
+        default: return 'bg-gray-100 text-gray-700';
+    }
+}
+
+function translateStatus(status) {
+    switch ((status || '').toLowerCase()) {
+        case 'aprovado': return 'Aprovado';
+        case 'rejeitado': return 'Rejeitado';
+        case 'em_analise':
+        case 'em análise': return 'Em Análise';
+        case 'pendente': return 'Pendente';
+        default: return status || 'Não informado';
+    }
+}
+
+function criarUrlAnexo(anexo) {
+    if (!anexo) return '#';
+    if (anexo.base64) {
+        return anexo.base64.startsWith('data:')
+            ? anexo.base64
+            : `data:${anexo.tipo || 'application/octet-stream'};base64,${anexo.base64}`;
+    }
+    if (anexo.url) return anexo.url;
+    if (anexo.caminho) return `http://localhost:3000${anexo.caminho}`;
+    return '#';
+}
+
+function showModalWithAttachments(type, title, message, detalhes = null, anexos = []) {
+    const existingModal = document.getElementById('customModal');
+    if (existingModal) existingModal.remove();
+
+    const config = {
+        success: { icon: 'fa-check-circle', iconColor: 'text-green-500', bgGradient: 'from-green-500 to-green-600', buttonColor: 'bg-green-500 hover:bg-green-600' },
+        error: { icon: 'fa-exclamation-circle', iconColor: 'text-red-500', bgGradient: 'from-red-500 to-red-600', buttonColor: 'bg-red-500 hover:bg-red-600' },
+        info: { icon: 'fa-info-circle', iconColor: 'text-blue-500', bgGradient: 'from-blue-500 to-blue-600', buttonColor: 'bg-blue-500 hover:bg-blue-600' },
+        warning: { icon: 'fa-exclamation-triangle', iconColor: 'text-yellow-500', bgGradient: 'from-yellow-500 to-yellow-600', buttonColor: 'bg-yellow-500 hover:bg-yellow-600' },
+        detalhe: { icon: 'fa-file-alt', iconColor: 'text-orange-500', bgGradient: 'from-orange-500 to-orange-600', buttonColor: 'bg-orange-500 hover:bg-orange-600' }
+    };
+
+    const current = config[type] || config.info;
+
+    const modal = document.createElement('div');
+    modal.id = 'customModal';
+    modal.className = 'fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 backdrop-blur-sm';
+    modal.style.animation = 'fadeIn 0.3s ease';
+
+    if (!document.getElementById('modalStyles')) {
+        const style = document.createElement('style');
+        style.id = 'modalStyles';
+        style.textContent = `
+            @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes slideIn { from { transform: translateY(-50px) scale(0.9); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
+            .modal-content { animation: slideIn 0.3s ease; }
+            .anexo-item { transition: all 0.2s ease; }
+            .anexo-item:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        `;
+        document.head.appendChild(style);
+    }
+
+    let anexosHtml = '';
+    if (anexos && anexos.length > 0) {
+        anexosHtml = `
+            <div class="mt-4">
+                <div class="flex items-center space-x-2 mb-3">
+                    <i class="fas fa-paperclip text-orange-500 text-sm"></i>
+                    <span class="text-xs font-semibold text-gray-700 uppercase">Anexos (${anexos.length})</span>
+                </div>
+                <div class="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
+                    ${anexos.map(anexo => {
+                        const fileName = anexo.nome || 'Arquivo';
+                        const fileExt = fileName.split('.').pop().toLowerCase();
+                        const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(fileExt);
+                        const fileUrl = criarUrlAnexo(anexo);
+                        let fileIcon = 'fa-file';
+                        if (isImage) fileIcon = 'fa-file-image';
+                        else if (fileExt === 'pdf') fileIcon = 'fa-file-pdf';
+                        else if (['doc', 'docx'].includes(fileExt)) fileIcon = 'fa-file-word';
+                        else if (['xls', 'xlsx'].includes(fileExt)) fileIcon = 'fa-file-excel';
+                        else if (['zip', 'rar', '7z'].includes(fileExt)) fileIcon = 'fa-file-archive';
+                        return `
+                            <div class="anexo-item bg-gray-50 rounded-lg p-3 border border-gray-200 hover:border-orange-300 transition cursor-pointer" onclick="window.open('${fileUrl}', '_blank')">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+                                            <i class="fas ${fileIcon} text-orange-600 text-sm"></i>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-sm font-medium text-gray-800 truncate" title="${fileName}">${fileName.length > 30 ? fileName.substring(0, 30) + '...' : fileName}</p>
+                                            <p class="text-xs text-gray-500">${isImage ? 'Imagem' : 'Documento'}${anexo.tamanho ? ` • ${formatFileSize(anexo.tamanho)}` : ''}</p>
+                                        </div>
+                                    </div>
+                                    <i class="fas fa-external-link-alt text-gray-400 text-xs"></i>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+    } else {
+        anexosHtml = `
+            <div class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200 text-center">
+                <i class="fas fa-paperclip text-gray-400 text-lg mb-2 block"></i>
+                <p class="text-xs text-gray-500">Nenhum anexo enviado</p>
+            </div>
+        `;
+    }
+
+    let detalhesHtml = '';
+    if (detalhes) {
+        detalhesHtml = `
+            <div class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div class="space-y-3">
+                    ${detalhes.protocolo ? `<div class="flex items-center justify-between pb-2 border-b border-gray-200"><span class="text-xs text-gray-500 font-medium">PROTOCOLO</span><span class="text-sm font-mono font-bold text-gray-800">${detalhes.protocolo}</span></div>` : ''}
+                    ${detalhes.titulo ? `<div><span class="text-xs text-gray-500 font-medium block mb-1">TÍTULO</span><span class="text-sm font-semibold text-gray-800">${escapeHtml(detalhes.titulo)}</span></div>` : ''}
+                    ${detalhes.descricao ? `<div><span class="text-xs text-gray-500 font-medium block mb-1">DESCRIÇÃO</span><p class="text-sm text-gray-700 leading-relaxed">${escapeHtml(detalhes.descricao)}</p></div>` : ''}
+                    ${detalhes.data ? `<div class="flex items-center justify-between"><span class="text-xs text-gray-500 font-medium">DATA DO OCORRIDO</span><span class="text-sm text-gray-700">${detalhes.data}</span></div>` : ''}
+                    ${detalhes.local ? `<div class="flex items-center justify-between"><span class="text-xs text-gray-500 font-medium">LOCAL</span><span class="text-sm text-gray-700">${escapeHtml(detalhes.local)}</span></div>` : ''}
+                    ${detalhes.status ? `<div class="flex items-center justify-between"><span class="text-xs text-gray-500 font-medium">STATUS</span><span class="px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(detalhes.status)}">${translateStatus(detalhes.status)}</span></div>` : ''}
+                    ${detalhes.categoria ? `<div class="flex items-center justify-between"><span class="text-xs text-gray-500 font-medium">CATEGORIA</span><span class="text-sm text-gray-700">${escapeHtml(detalhes.categoria)}</span></div>` : ''}
+                    ${detalhes.usuario ? `<div class="flex items-center justify-between"><span class="text-xs text-gray-500 font-medium">USUÁRIO</span><span class="text-sm text-gray-700">${escapeHtml(detalhes.usuario)}</span></div>` : ''}
+                    ${detalhes.email ? `<div class="flex items-center justify-between"><span class="text-xs text-gray-500 font-medium">EMAIL</span><span class="text-sm text-gray-700">${escapeHtml(detalhes.email)}</span></div>` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    modal.innerHTML = `
+        <div class="modal-content bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 overflow-hidden">
+            <div class="bg-gradient-to-r ${current.bgGradient} px-6 py-4">
+                <div class="flex items-center space-x-3">
+                    <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg">
+                        <i class="fas ${current.icon} ${current.iconColor} text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white">${escapeHtml(title)}</h3>
+                </div>
+            </div>
+            <div class="px-6 py-6 max-h-[70vh] overflow-y-auto">
+                <p class="text-gray-600 text-base leading-relaxed">${escapeHtml(message)}</p>
+                ${detalhesHtml}
+                ${anexosHtml}
+            </div>
+            <div class="px-6 py-4 bg-gray-50 flex justify-end">
+                <button id="modalCloseBtn" class="px-6 py-2 ${current.buttonColor} text-white rounded-lg transition transform hover:scale-105 font-medium">
+                    <i class="fas fa-check mr-2"></i>Fechar
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    const closeModal = () => {
+        modal.style.opacity = '0';
+        setTimeout(() => modal.remove(), 300);
+    };
+    document.getElementById('modalCloseBtn')?.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+}
+
 // ============================================
 // TOAST DE NOTIFICAÇÃO
 // ============================================
@@ -129,7 +317,7 @@ async function buscarDenuncias() {
     try {
         const response = await fetch('http://localhost:3000/api/denuncias');
         const data = await response.json();
-        denunciasData = Array.isArray(data) ? data : [];
+        denunciasData = Array.isArray(data) ? data : (data.data || []);
         return denunciasData;
     } catch (error) {
         console.error('Erro ao buscar denúncias:', error);
@@ -141,7 +329,7 @@ async function buscarReclamacoes() {
     try {
         const response = await fetch('http://localhost:3000/api/reclamacoes');
         const data = await response.json();
-        reclamacoesData = Array.isArray(data) ? data : [];
+        reclamacoesData = Array.isArray(data) ? data : (data.data || []);
         return reclamacoesData;
     } catch (error) {
         console.error('Erro ao buscar reclamações:', error);
@@ -153,7 +341,7 @@ async function buscarUsuarios() {
     try {
         const response = await fetch('http://localhost:3000/api/usuarios');
         const data = await response.json();
-        usuariosData = Array.isArray(data) ? data : [];
+        usuariosData = Array.isArray(data) ? data : (data.data || []);
         return usuariosData;
     } catch (error) {
         console.error('Erro ao buscar usuários:', error);
@@ -161,29 +349,23 @@ async function buscarUsuarios() {
     }
 }
 
-// ============================================
-// ATUALIZAR STATUS
-// ============================================
-async function atualizarStatus(id, tipo, status, evento) {
-    if (evento) evento.stopPropagation();
-    
+async function buscarAnexos(denunciaId, reclamacaoId) {
     try {
-        const url = `http://localhost:3000/api/${tipo}/${id}/status`;
-        const response = await fetch(url, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: status })
-        });
-        
-        if (response.ok) {
-            showToast('success', `Status atualizado para: ${status}`);
-            await init();
+        let url = '';
+        if (denunciaId) {
+            url = `http://localhost:3000/api/anexos/denuncia/${denunciaId}`;
+        } else if (reclamacaoId) {
+            url = `http://localhost:3000/api/anexos/reclamacao/${reclamacaoId}`;
         } else {
-            showToast('error', 'Erro ao atualizar status');
+            return [];
         }
+
+        const response = await fetch(url);
+        const data = await response.json();
+        return data.success ? data.anexos : [];
     } catch (error) {
-        console.error('Erro:', error);
-        showToast('error', 'Erro ao conectar ao servidor');
+        console.error('Erro ao buscar anexos:', error);
+        return [];
     }
 }
 
@@ -268,13 +450,17 @@ function renderizarCardsEstatisticas() {
     document.getElementById('cardsEstatisticas').innerHTML = cardsHtml;
     
     // Atualizar badges do sidebar
-    document.getElementById('badgeDenuncias').innerText = denunciasData.length;
-    document.getElementById('badgeUsuarios').innerText = totalUsuarios;
-    document.getElementById('badgeReclamacoes').innerText = reclamacoesData.length;
+    const badgeDenuncias = document.getElementById('badgeDenuncias');
+    const badgeReclamacoes = document.getElementById('badgeReclamacoes');
+    const badgeUsuarios = document.getElementById('badgeUsuarios');
+    
+    if (badgeDenuncias) badgeDenuncias.innerText = denunciasData.length;
+    if (badgeReclamacoes) badgeReclamacoes.innerText = reclamacoesData.length;
+    if (badgeUsuarios) badgeUsuarios.innerText = totalUsuarios;
 }
 
 // ============================================
-// RENDERIZAR GRÁFICO (Denúncias + Reclamações)
+// RENDERIZAR GRÁFICO
 // ============================================
 function renderizarGrafico() {
     const semanas = ['Semana 1', 'Semana 2', 'Semana 3', 'Semana 4'];
@@ -284,7 +470,6 @@ function renderizarGrafico() {
     const agora = new Date();
     const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1);
     
-    // Contar denúncias por semana
     denunciasData.forEach(denuncia => {
         const data = new Date(denuncia.createdAt);
         if (data >= inicioMes) {
@@ -294,7 +479,6 @@ function renderizarGrafico() {
         }
     });
     
-    // Contar reclamações por semana
     reclamacoesData.forEach(reclamacao => {
         const data = new Date(reclamacao.createdAt);
         if (data >= inicioMes) {
@@ -336,10 +520,7 @@ function renderizarGrafico() {
             plugins: {
                 legend: {
                     position: 'top',
-                    labels: {
-                        usePointStyle: true,
-                        boxWidth: 10
-                    }
+                    labels: { usePointStyle: true, boxWidth: 10 }
                 },
                 tooltip: {
                     backgroundColor: 'rgba(0,0,0,0.8)',
@@ -349,14 +530,8 @@ function renderizarGrafico() {
                 }
             },
             scales: {
-                y: { 
-                    beginAtZero: true, 
-                    ticks: { stepSize: 1 },
-                    grid: { color: 'rgba(0, 0, 0, 0.05)' }
-                },
-                x: { 
-                    grid: { display: false }
-                }
+                y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
+                x: { grid: { display: false } }
             }
         }
     });
@@ -374,7 +549,8 @@ function renderizarAtividades() {
     todasAtividades.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     const atividadesRecentes = todasAtividades.slice(0, 5);
     
-    document.getElementById('totalAtividades').innerText = todasAtividades.length;
+    const totalAtividades = document.getElementById('totalAtividades');
+    if (totalAtividades) totalAtividades.innerText = todasAtividades.length;
     
     const icones = {
         pendente: 'fa-clock text-yellow-600 bg-yellow-100',
@@ -409,22 +585,17 @@ function renderizarAtividades() {
         atividadesHtml = '<p class="text-center text-gray-500 py-4">Nenhuma atividade recente</p>';
     }
     
-    document.getElementById('listaAtividades').innerHTML = atividadesHtml;
+    const listaAtividades = document.getElementById('listaAtividades');
+    if (listaAtividades) listaAtividades.innerHTML = atividadesHtml;
 }
 
 // ============================================
-// RENDERIZAR TABELA DE DENÚNCIAS E RECLAMAÇÕES
+// RENDERIZAR TABELA DE GESTÃO (SEM ÍCONE DE FOLHA)
+// ORDEM: Título, Tipo, Categoria, Data, Status, Ações
 // ============================================
-async function carregarDenuncias() {
+async function carregarTabelaGeral() {
     await buscarDenuncias();
     await buscarReclamacoes();
-    
-    const statusOptions = {
-        pendente: ['pendente', 'em_andamento', 'concluida', 'arquivada'],
-        em_andamento: ['pendente', 'em_andamento', 'concluida', 'arquivada'],
-        concluida: ['pendente', 'em_andamento', 'concluida', 'arquivada'],
-        arquivada: ['pendente', 'em_andamento', 'concluida', 'arquivada']
-    };
     
     const statusCores = {
         pendente: 'bg-yellow-50 text-yellow-700 border-yellow-300',
@@ -438,66 +609,195 @@ async function carregarDenuncias() {
     
     // Combinar denúncias e reclamações
     const todosItens = [
-        ...denunciasData.map(d => ({ ...d, tipo: 'denuncia', categoria_tipo: d.tipo })),
-        ...reclamacoesData.map(r => ({ ...r, tipo: 'reclamacao', categoria_tipo: r.categoria }))
+        ...denunciasData.map(d => ({ 
+            ...d, 
+            tipo_item: 'denuncia',
+            tipo_texto: 'Denúncia',
+            categoria_exibicao: d.tipo || 'Não informada',
+            icone: 'fa-exclamation-triangle text-orange-500',
+            bgIcon: 'bg-orange-100'
+        })),
+        ...reclamacoesData.map(r => ({ 
+            ...r, 
+            tipo_item: 'reclamacao',
+            tipo_texto: 'Reclamação',
+            categoria_exibicao: r.categoria || 'Não informada',
+            icone: 'fa-flag text-yellow-500',
+            bgIcon: 'bg-yellow-100'
+        }))
     ];
     
+    // Ordenar por data (mais recentes primeiro)
     todosItens.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    const itensExibir = todosItens.slice(0, 10);
     
     let tabelaHtml = '';
-    itensExibir.forEach(item => {
-        const dataFormatada = new Date(item.createdAt).toLocaleDateString('pt-PT');
-        const cor = statusCores[item.status] || statusCores.pendente;
-        const tipoIcone = item.tipo === 'denuncia' ? 'fa-exclamation-triangle text-orange-500' : 'fa-flag text-yellow-500';
-        const tipoTexto = item.tipo === 'denuncia' ? 'Denúncia' : 'Reclamação';
-        
-        tabelaHtml += `
-            <tr class="hover:bg-gray-50 transition cursor-pointer" onclick="verDetalhes(${item.id}, '${item.tipo}')">
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="flex items-center space-x-2">
-                        <i class="fas ${tipoIcone}"></i>
-                        <span class="text-sm font-medium">${tipoTexto}</span>
-                    </div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#${item.id}</td>
-                <td class="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">${item.titulo}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${item.categoria_tipo || '-'}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${dataFormatada}</td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <select onchange="atualizarStatus(${item.id}, '${item.tipo === 'denuncia' ? 'denuncias' : 'reclamacoes'}', this.value)" 
-                            class="text-xs border rounded-lg px-2 py-1 ${cor}" onclick="event.stopPropagation()">
-                        ${item.tipo === 'denuncia' ? `
-                            <option value="pendente" ${item.status === 'pendente' ? 'selected' : ''}>Pendente</option>
-                            <option value="em_andamento" ${item.status === 'em_andamento' ? 'selected' : ''}>Em Andamento</option>
-                            <option value="concluida" ${item.status === 'concluida' ? 'selected' : ''}>Concluída</option>
-                            <option value="arquivada" ${item.status === 'arquivada' ? 'selected' : ''}>Arquivada</option>
-                        ` : `
-                            <option value="aberta" ${item.status === 'aberta' ? 'selected' : ''}>Aberta</option>
-                            <option value="em_andamento" ${item.status === 'em_andamento' ? 'selected' : ''}>Em Andamento</option>
-                            <option value="resolvida" ${item.status === 'resolvida' ? 'selected' : ''}>Resolvida</option>
-                            <option value="fechada" ${item.status === 'fechada' ? 'selected' : ''}>Fechada</option>
-                        `}
-                    </select>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <button onclick="verDetalhes(${item.id}, '${item.tipo}')" class="text-blue-600 hover:text-blue-800" title="Ver detalhes">
-                        <i class="fas fa-eye"></i>
-                    </button>
+    
+    if (todosItens.length === 0) {
+        tabelaHtml = `
+            <tr>
+                <td colspan="6" class="text-center py-8 text-gray-500">
+                    <i class="fas fa-inbox text-4xl mb-3 block text-gray-300"></i>
+                    Nenhuma denúncia ou reclamação encontrada
                 </td>
             </tr>
         `;
-    });
-    
-    if (itensExibir.length === 0) {
-        tabelaHtml = '<tr><td colspan="7" class="text-center py-8 text-gray-500">Nenhuma denúncia ou reclamação encontrada</td></tr>';
+    } else {
+        todosItens.forEach(item => {
+            const dataFormatada = new Date(item.createdAt).toLocaleDateString('pt-PT', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+            const cor = statusCores[item.status] || statusCores.pendente;
+            
+            let statusExibicao = '';
+            if (item.tipo_item === 'denuncia') {
+                const statusMap = {
+                    pendente: 'Pendente',
+                    em_andamento: 'Em Andamento',
+                    concluida: 'Concluída',
+                    arquivada: 'Arquivada'
+                };
+                statusExibicao = statusMap[item.status] || item.status;
+            } else {
+                const statusMap = {
+                    aberta: 'Aberta',
+                    em_andamento: 'Em Andamento',
+                    resolvida: 'Resolvida',
+                    fechada: 'Fechada'
+                };
+                statusExibicao = statusMap[item.status] || item.status;
+            }
+            
+            tabelaHtml += `
+                <tr class="hover:bg-gray-50 transition cursor-pointer" onclick="verDetalhes(${item.id}, '${item.tipo_item}')">
+                    <!-- Título -->
+                    <td class="px-6 py-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 ${item.bgIcon} rounded-full flex items-center justify-center">
+                                <i class="fas ${item.icone} text-sm"></i>
+                            </div>
+                            <span class="text-sm font-medium text-gray-900 max-w-xs truncate" title="${item.titulo.replace(/"/g, '&quot;')}">
+                                ${item.titulo.length > 50 ? item.titulo.substring(0, 50) + '...' : item.titulo}
+                            </span>
+                        </div>
+                    </td>
+                    <!-- Tipo -->
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="text-sm font-semibold ${item.tipo_item === 'denuncia' ? 'text-orange-600' : 'text-yellow-600'}">
+                            ${item.tipo_texto}
+                        </span>
+                    </td>
+                    <!-- Categoria -->
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="text-sm text-gray-600">${item.categoria_exibicao}</span>
+                    </td>
+                    <!-- Data -->
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="text-sm text-gray-500">${dataFormatada}</span>
+                    </td>
+                    <!-- Status -->
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <select onchange="atualizarStatus(${item.id}, '${item.tipo_item === 'denuncia' ? 'denuncias' : 'reclamacoes'}', this.value, event)" 
+                                class="text-xs border rounded-lg px-2 py-1 ${cor} focus:outline-none focus:ring-2 focus:ring-orange-500" 
+                                onclick="event.stopPropagation()">
+                            ${item.tipo_item === 'denuncia' ? `
+                                <option value="pendente" ${item.status === 'pendente' ? 'selected' : ''}>📋 Pendente</option>
+                                <option value="em_andamento" ${item.status === 'em_andamento' ? 'selected' : ''}>⚙️ Em Andamento</option>
+                                <option value="concluida" ${item.status === 'concluida' ? 'selected' : ''}>✅ Concluída</option>
+                                <option value="arquivada" ${item.status === 'arquivada' ? 'selected' : ''}>📦 Arquivada</option>
+                            ` : `
+                                <option value="aberta" ${item.status === 'aberta' ? 'selected' : ''}>📋 Aberta</option>
+                                <option value="em_andamento" ${item.status === 'em_andamento' ? 'selected' : ''}>⚙️ Em Andamento</option>
+                                <option value="resolvida" ${item.status === 'resolvida' ? 'selected' : ''}>✅ Resolvida</option>
+                                <option value="fechada" ${item.status === 'fechada' ? 'selected' : ''}>🔒 Fechada</option>
+                            `}
+                        </select>
+                    </td>
+                    <!-- Ações - Apenas ícone de olho -->
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <button onclick="verDetalhes(${item.id}, '${item.tipo_item}')" 
+                                class="text-blue-600 hover:text-blue-800 transition p-2 hover:bg-blue-50 rounded-lg" 
+                                title="Ver detalhes">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </td>
+                </table>
+            `;
+        });
     }
     
-    document.getElementById('tabelaDenuncias').innerHTML = tabelaHtml;
+    const tabelaGestao = document.getElementById('tabelaGestao');
+    if (tabelaGestao) tabelaGestao.innerHTML = tabelaHtml;
 }
 
 // ============================================
-// RENDERIZAR CARDS DE FUNCIONALIDADES (SEM RELATÓRIOS E ATUALIZAÇÃO)
+// VER DETALHES (Resumo)
+// ============================================
+async function verDetalhes(id, tipo) {
+    const item = tipo === 'denuncia' 
+        ? denunciasData.find(d => d.id === id)
+        : reclamacoesData.find(r => r.id === id);
+    
+    if (!item) {
+        showToast('error', 'Item não encontrado');
+        return;
+    }
+
+    try {
+        const anexos = await buscarAnexos(tipo === 'denuncia' ? id : null, tipo === 'reclamacao' ? id : null);
+        const dataFormatada = new Date(item.createdAt).toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const detalhes = {
+            protocolo: item.protocolo || 'N/A',
+            titulo: item.titulo,
+            descricao: item.descricao,
+            data: dataFormatada,
+            local: item.local || 'Não informado',
+            status: item.status,
+            categoria: tipo === 'denuncia' ? (item.tipo || 'Não informada') : (item.categoria || 'Não informada'),
+            usuario: item.usuario_id ? `ID ${item.usuario_id}` : 'N/A',
+            email: 'N/A'
+        };
+
+        const tipoTexto = tipo === 'denuncia' ? 'Denúncia' : 'Reclamação';
+        showModalWithAttachments('detalhe', `Detalhes da ${tipoTexto}`, `Visualizando detalhes da ${tipoTexto.toLowerCase()}`, detalhes, anexos);
+    } catch (error) {
+        console.error('Erro ao carregar anexos:', error);
+        showToast('error', 'Erro ao carregar os anexos');
+    }
+}
+
+// ============================================
+// ATUALIZAR STATUS
+// ============================================
+async function atualizarStatus(id, tipo, status, evento) {
+    if (evento) evento.stopPropagation();
+    
+    try {
+        const url = `http://localhost:3000/api/${tipo}/${id}/status`;
+        const response = await fetch(url, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: status })
+        });
+        
+        if (response.ok) {
+            showToast('success', `Status atualizado com sucesso!`);
+            await carregarTabelaGeral();
+            await renderizarCardsEstatisticas();
+            await renderizarAtividades();
+            await renderizarNotificacoes();
+        } else {
+            showToast('error', 'Erro ao atualizar status');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        showToast('error', 'Erro ao conectar ao servidor');
+    }
+}
+
+// ============================================
+// RENDERIZAR CARDS DE FUNCIONALIDADES (APENAS 3 CARDS)
 // ============================================
 function renderizarCardsFuncionalidades() {
     const totalDenuncias = denunciasData.length;
@@ -528,7 +828,7 @@ function renderizarCardsFuncionalidades() {
                 </div>
             </div>
             <h3 class="text-lg font-bold text-gray-800 mb-1">Configurações do Sistema</h3>
-            <p class="text-sm text-gray-500 mb-4">Parâmetros gerais, categorias</p>
+            <p class="text-sm text-gray-500 mb-4">Parâmetros gerais, categorias e permissões</p>
             <div class="flex justify-end">
                 <a href="#" class="text-purple-600 text-sm font-medium hover:text-purple-800">
                     Configurar <i class="fas fa-arrow-right ml-1"></i>
@@ -550,24 +850,10 @@ function renderizarCardsFuncionalidades() {
                 </button>
             </div>
         </div>
-        
-        <div class="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition border-t-4 border-orange-500">
-            <div class="flex items-center justify-between mb-4">
-                <div class="bg-orange-100 p-3 rounded-lg">
-                    <i class="fas fa-exclamation-triangle text-orange-600 text-xl"></i>
-                </div>
-                <span class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full">${denunciasData.filter(d => d.status === 'pendente').length + reclamacoesData.filter(r => r.status === 'aberta').length} pendentes</span>
-            </div>
-            <h3 class="text-lg font-bold text-gray-800 mb-1">Gestão de Conteúdo</h3>
-            <p class="text-sm text-gray-500 mb-4">Gerir denúncias e reclamações</p>
-            <div class="flex justify-end">
-                <button onclick="document.getElementById('tabelaDenuncias').scrollIntoView({behavior: 'smooth'})" class="text-orange-600 text-sm font-medium hover:text-orange-800">
-                    Gerenciar <i class="fas fa-arrow-right ml-1"></i>
-                </button>
-            </div>
-        </div>
     `;
-    document.getElementById('cardsFuncionalidades').innerHTML = cardsHtml;
+    
+    const cardsFuncionalidades = document.getElementById('cardsFuncionalidades');
+    if (cardsFuncionalidades) cardsFuncionalidades.innerHTML = cardsHtml;
 }
 
 // ============================================
@@ -579,11 +865,13 @@ function renderizarNotificacoes() {
     const totalPendentes = pendentesDenuncias.length + pendentesReclamacoes.length;
     
     const contador = document.getElementById('contadorNotificacoes');
-    if (totalPendentes > 0) {
-        contador.innerText = totalPendentes > 9 ? '9+' : totalPendentes;
-        contador.classList.remove('hidden');
-    } else {
-        contador.classList.add('hidden');
+    if (contador) {
+        if (totalPendentes > 0) {
+            contador.innerText = totalPendentes > 9 ? '9+' : totalPendentes;
+            contador.classList.remove('hidden');
+        } else {
+            contador.classList.add('hidden');
+        }
     }
     
     let notificacoesHtml = '';
@@ -626,33 +914,8 @@ function renderizarNotificacoes() {
         notificacoesHtml = '<div class="p-4 text-center text-gray-500">Nenhuma notificação</div>';
     }
     
-    document.getElementById('listaNotificacoes').innerHTML = notificacoesHtml;
-}
-
-// ============================================
-// VER DETALHES COM MODAL
-// ============================================
-function verDetalhes(id, tipo) {
-    const item = tipo === 'denuncia' 
-        ? denunciasData.find(d => d.id === id)
-        : reclamacoesData.find(r => r.id === id);
-    
-    if (item) {
-        const dataFormatada = new Date(item.createdAt).toLocaleDateString('pt-PT', {
-            day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
-        });
-        
-        const mensagem = `📋 ${tipo === 'denuncia' ? 'DENÚNCIA' : 'RECLAMAÇÃO'}\n\n` +
-            `Protocolo: ${item.protocolo || 'N/A'}\n` +
-            `Título: ${item.titulo}\n` +
-            `Descrição: ${item.descricao}\n` +
-            `Status: ${item.status.replace('_', ' ')}\n` +
-            `Data: ${dataFormatada}\n` +
-            `Local: ${item.local || 'Não informado'}\n` +
-            `Categoria: ${item.tipo || item.categoria || 'Não informada'}`;
-        
-        showModal('info', `Detalhes da ${tipo === 'denuncia' ? 'Denúncia' : 'Reclamação'}`, mensagem);
-    }
+    const listaNotificacoes = document.getElementById('listaNotificacoes');
+    if (listaNotificacoes) listaNotificacoes.innerHTML = notificacoesHtml;
 }
 
 // ============================================
@@ -665,7 +928,7 @@ function setupNotificacaoDropdown() {
     if (btn) {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
-            dropdown.classList.toggle('hidden');
+            if (dropdown) dropdown.classList.toggle('hidden');
             renderizarNotificacoes();
         });
     }
@@ -752,6 +1015,28 @@ function logout() {
 }
 
 // ============================================
+// ATUALIZAR CONTADORES PERIODICAMENTE
+// ============================================
+let intervaloAtualizacao = null;
+
+function iniciarAtualizacaoPeriodica() {
+    if (intervaloAtualizacao) clearInterval(intervaloAtualizacao);
+    
+    intervaloAtualizacao = setInterval(async () => {
+        await buscarDenuncias();
+        await buscarReclamacoes();
+        await buscarUsuarios();
+        renderizarCardsEstatisticas();
+        renderizarGrafico();
+        renderizarAtividades();
+        await carregarTabelaGeral();
+        renderizarCardsFuncionalidades();
+        renderizarNotificacoes();
+        console.log('🔄 Dashboard atualizado automaticamente');
+    }, 30000);
+}
+
+// ============================================
 // INICIALIZAÇÃO PRINCIPAL
 // ============================================
 async function init() {
@@ -770,10 +1055,13 @@ async function init() {
     renderizarCardsEstatisticas();
     renderizarGrafico();
     renderizarAtividades();
-    await carregarDenuncias();
+    await carregarTabelaGeral();
     renderizarCardsFuncionalidades();
     renderizarNotificacoes();
     setupNotificacaoDropdown();
+    iniciarAtualizacaoPeriodica();
+    
+    console.log('✅ Dashboard do Administrador inicializado com sucesso!');
 }
 
 // Iniciar quando o DOM estiver carregado

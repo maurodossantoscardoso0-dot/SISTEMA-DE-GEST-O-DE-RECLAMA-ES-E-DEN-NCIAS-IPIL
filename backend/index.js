@@ -6,30 +6,29 @@ const sequelize = require('./db');
 // Importar os módulos de rotas
 const denunciasRoutes = require('./modules/denuncias');
 const reclamacoesRoutes = require('./modules/reclamacoes');
-const usuariosRoutes = require('./modules/usuarios');
-const anexosRoutes = require('./modules/anexos'); // <-- ADICIONADO
+const { router: usuariosRoutes, Usuario } = require('./modules/usuarios');
+const anexosRoutes = require('./modules/anexos');
 
-// Importar os modelos para controlar a ordem de criação
-const { Usuario } = require('./modules/usuarios');
+// Importar os modelos
 const { Denuncia } = require('./modules/denuncias');
 const { Reclamacao } = require('./modules/reclamacoes');
-const { Anexo } = require('./modules/anexos'); // <-- ADICIONADO
+const { Anexo } = require('./modules/anexos');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors({
-    origin: '*', // Em produção, especifique os domínios permitidos
+    origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use(express.json({ limit: '50mb' })); // <-- AUMENTADO para 50MB (suporta anexos)
-app.use(express.urlencoded({ extended: true, limit: '50mb' })); // <-- AUMENTADO
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Middleware para log de requisições
 app.use((req, res, next) => {
-    console.log(`📝 ${req.method} ${req.url}`);
+    console.log(`${req.method} ${req.url}`);
     next();
 });
 
@@ -40,7 +39,7 @@ app.use(express.static(path.join(__dirname, '../')));
 app.use('/api/denuncias', denunciasRoutes);
 app.use('/api/reclamacoes', reclamacoesRoutes);
 app.use('/api/usuarios', usuariosRoutes);
-app.use('/api/anexos', anexosRoutes); // <-- ADICIONADO
+app.use('/api/anexos', anexosRoutes);
 
 // Rota de teste
 app.get('/', (req, res) => {
@@ -52,7 +51,7 @@ app.get('/', (req, res) => {
             usuarios: '/api/usuarios',
             denuncias: '/api/denuncias',
             reclamacoes: '/api/reclamacoes',
-            anexos: '/api/anexos', // <-- ADICIONADO
+            anexos: '/api/anexos',
             health: '/health'
         }
     });
@@ -81,11 +80,11 @@ app.get('/health', async (req, res) => {
 // Rota para estatísticas gerais
 app.get('/api/estatisticas/gerais', async (req, res) => {
     try {
-        const [usuariosCount, denunciasCount, reclamacoesCount, anexosCount] = await Promise.all([ // <-- ADICIONADO anexosCount
+        const [usuariosCount, denunciasCount, reclamacoesCount, anexosCount] = await Promise.all([
             Usuario.count(),
             Denuncia.count(),
             Reclamacao.count(),
-            Anexo.count() // <-- ADICIONADO
+            Anexo.count()
         ]);
         
         const [denunciasPorStatus, reclamacoesPorStatus] = await Promise.all([
@@ -105,7 +104,7 @@ app.get('/api/estatisticas/gerais', async (req, res) => {
                 total_usuarios: usuariosCount,
                 total_denuncias: denunciasCount,
                 total_reclamacoes: reclamacoesCount,
-                total_anexos: anexosCount, // <-- ADICIONADO
+                total_anexos: anexosCount,
                 denuncias_por_status: denunciasPorStatus,
                 reclamacoes_por_status: reclamacoesPorStatus
             }
@@ -130,7 +129,7 @@ app.use((req, res) => {
 
 // Middleware de tratamento de erros
 app.use((err, req, res, next) => {
-    console.error('❌ Erro no servidor:', err);
+    console.error('Erro no servidor:', err);
     res.status(500).json({ 
         success: false,
         error: 'Erro interno do servidor',
@@ -138,10 +137,9 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Função para verificar e criar usuário admin padrão se não existir
+// Função para verificar e criar usuário admin padrão
 async function ensureDefaultAdmin() {
     try {
-        // Verificar se já existe um admin com o número de processo 00001
         const adminExists = await Usuario.findOne({ 
             where: { 
                 numero_processo: '00001',
@@ -150,7 +148,7 @@ async function ensureDefaultAdmin() {
         });
         
         if (!adminExists) {
-            console.log('⚠️ Admin padrão não encontrado. Criando...');
+            console.log('Admin padrão não encontrado. Criando...');
             
             const bcrypt = require('bcrypt');
             const hashedPassword = await bcrypt.hash('admin123', 10);
@@ -167,110 +165,136 @@ async function ensureDefaultAdmin() {
                 endereco: 'Sistema'
             });
             
-            console.log('✅ Usuário administrador padrão criado!');
-            console.log('📋 Número de processo: 00001');
-            console.log('🔑 Senha: admin123');
+            console.log('Usuário administrador padrão criado!');
+            console.log('Número de processo: 00001');
+            console.log('Senha: admin123');
             return admin;
         } else {
-            console.log('✅ Admin padrão já existe com número de processo: 00001');
+            console.log('Admin padrão já existe com número de processo: 00001');
             return adminExists;
         }
     } catch (error) {
-        console.error('⚠️ Erro ao verificar/criar administrador padrão:', error.message);
+        console.error('Erro ao verificar/criar administrador padrão:', error.message);
         return null;
     }
 }
 
-// Função para verificar e criar relacionamentos no banco de dados
+// Função para verificar e criar relacionamentos
 async function setupAssociations() {
     try {
-        // Definir relacionamentos entre as tabelas
-        Usuario.hasMany(Denuncia, { foreignKey: 'usuario_id', onDelete: 'CASCADE' });
-        Denuncia.belongsTo(Usuario, { foreignKey: 'usuario_id' });
+        // Importar os modelos novamente para garantir que estão atualizados
+        const { Usuario } = require('./modules/usuarios');
+        const { Denuncia } = require('./modules/denuncias');
+        const { Reclamacao } = require('./modules/reclamacoes');
+        const { Anexo } = require('./modules/anexos');
         
-        Usuario.hasMany(Reclamacao, { foreignKey: 'usuario_id', onDelete: 'CASCADE' });
-        Reclamacao.belongsTo(Usuario, { foreignKey: 'usuario_id' });
+        // Relacionamentos Usuario -> Denuncia
+        Usuario.hasMany(Denuncia, { 
+            foreignKey: 'usuario_id', 
+            onDelete: 'CASCADE',
+            as: 'denuncias'  // Adicionar alias específico
+        });
+        Denuncia.belongsTo(Usuario, { 
+            foreignKey: 'usuario_id',
+            as: 'usuario'  // Adicionar alias específico
+        });
         
-        // Relacionamentos com anexos
-        Denuncia.hasMany(Anexo, { foreignKey: 'denuncia_id', onDelete: 'CASCADE' });
-        Anexo.belongsTo(Denuncia, { foreignKey: 'denuncia_id' });
+        // Relacionamentos Usuario -> Reclamacao
+        Usuario.hasMany(Reclamacao, { 
+            foreignKey: 'usuario_id', 
+            onDelete: 'CASCADE',
+            as: 'reclamacoes'  // Adicionar alias específico
+        });
+        Reclamacao.belongsTo(Usuario, { 
+            foreignKey: 'usuario_id',
+            as: 'usuario'  // Adicionar alias específico
+        });
         
-        Reclamacao.hasMany(Anexo, { foreignKey: 'reclamacao_id', onDelete: 'CASCADE' });
-        Anexo.belongsTo(Reclamacao, { foreignKey: 'reclamacao_id' });
+        // Relacionamentos Denuncia -> Anexo (corrigido)
+        Denuncia.hasMany(Anexo, { 
+            foreignKey: 'denuncia_id', 
+            onDelete: 'CASCADE',
+            as: 'anexosDaDenuncia'  // Mudar o alias para evitar conflito
+        });
+        Anexo.belongsTo(Denuncia, { 
+            foreignKey: 'denuncia_id',
+            as: 'denuncia'  // Adicionar alias específico
+        });
         
-        console.log('✅ Relacionamentos entre tabelas configurados');
+        // Relacionamentos Reclamacao -> Anexo (corrigido)
+        Reclamacao.hasMany(Anexo, { 
+            foreignKey: 'reclamacao_id', 
+            onDelete: 'CASCADE',
+            as: 'anexosDaReclamacao'  // Mudar o alias para evitar conflito
+        });
+        Anexo.belongsTo(Reclamacao, { 
+            foreignKey: 'reclamacao_id',
+            as: 'reclamacao'  // Adicionar alias específico
+        });
+        
+        console.log('Relacionamentos entre tabelas configurados com sucesso!');
     } catch (error) {
-        console.error('❌ Erro ao configurar relacionamentos:', error);
+        console.error('Erro ao configurar relacionamentos:', error);
+        throw error;  // Lançar o erro para ser tratado
     }
 }
 
-// Função para sincronizar o banco de dados na ordem correta
+// Função para sincronizar o banco de dados
 async function syncDatabase() {
     try {
-        console.log('🔄 Iniciando sincronização do banco de dados...');
+        console.log('Iniciando sincronização do banco de dados...');
         
-        // Configurar relacionamentos primeiro
         await setupAssociations();
         
-        // 1º - Sincronizar a tabela de usuários (não tem dependências)
-        console.log('📦 Criando/atualizando tabela: usuarios');
+        console.log('Criando/atualizando tabela: usuarios');
         await Usuario.sync({ alter: true });
-        console.log('✅ Tabela de usuários criada/atualizada com sucesso!');
+        console.log('Tabela de usuários criada/atualizada com sucesso!');
         
-        // 2º - Sincronizar a tabela de denúncias (depende de usuários)
-        console.log('📦 Criando/atualizando tabela: denuncias');
+        console.log('Criando/atualizando tabela: denuncias');
         await Denuncia.sync({ alter: true });
-        console.log('✅ Tabela de denúncias criada/atualizada com sucesso!');
+        console.log('Tabela de denúncias criada/atualizada com sucesso!');
         
-        // 3º - Sincronizar a tabela de reclamações (depende de usuários)
-        console.log('📦 Criando/atualizando tabela: reclamacoes');
+        console.log('Criando/atualizando tabela: reclamacoes');
         await Reclamacao.sync({ alter: true });
-        console.log('✅ Tabela de reclamações criada/atualizada com sucesso!');
+        console.log('Tabela de reclamações criada/atualizada com sucesso!');
         
-        // 4º - Sincronizar a tabela de anexos (depende de denúncias e reclamações) // <-- ADICIONADO
-        console.log('📦 Criando/atualizando tabela: anexos');
+        console.log('Criando/atualizando tabela: anexos');
         await Anexo.sync({ alter: true });
-        console.log('✅ Tabela de anexos criada/atualizada com sucesso!');
+        console.log('Tabela de anexos criada/atualizada com sucesso!');
         
-        // Verificar/criar usuário admin padrão
         await ensureDefaultAdmin();
         
-        console.log('🎉 Banco de dados sincronizado com sucesso!');
+        console.log('Banco de dados sincronizado com sucesso!');
         return true;
     } catch (error) {
-        console.error('❌ Erro ao sincronizar o banco de dados:', error);
+        console.error('Erro ao sincronizar o banco de dados:', error);
         
-        // Se houver erro de chave estrangeira, tenta recriar as tabelas do zero
         if (error.name === 'SequelizeDatabaseError' && error.parent && (error.parent.errno === 150 || error.parent.code === 'ER_NO_REFERENCED_ROW')) {
-            console.log('⚠️ Erro de chave estrangeira detectado. Tentando recriar as tabelas...');
+            console.log('Erro de chave estrangeira detectado. Tentando recriar as tabelas...');
             
             try {
-                // Desabilitar verificação de chaves estrangeiras temporariamente
                 await sequelize.query('SET FOREIGN_KEY_CHECKS = 0');
                 
-                // Recriar tabelas na ordem correta
                 await Usuario.sync({ force: true });
-                console.log('✅ Tabela de usuários recriada com sucesso!');
+                console.log('Tabela de usuários recriada com sucesso!');
                 
                 await Denuncia.sync({ force: true });
-                console.log('✅ Tabela de denúncias recriada com sucesso!');
+                console.log('Tabela de denúncias recriada com sucesso!');
                 
                 await Reclamacao.sync({ force: true });
-                console.log('✅ Tabela de reclamações recriada com sucesso!');
+                console.log('Tabela de reclamações recriada com sucesso!');
                 
-                await Anexo.sync({ force: true }); // <-- ADICIONADO
-                console.log('✅ Tabela de anexos recriada com sucesso!');
+                await Anexo.sync({ force: true });
+                console.log('Tabela de anexos recriada com sucesso!');
                 
-                // Reabilitar verificação de chaves estrangeiras
                 await sequelize.query('SET FOREIGN_KEY_CHECKS = 1');
                 
-                // Criar admin padrão
                 await ensureDefaultAdmin();
                 
-                console.log('🎉 Banco de dados recriado com sucesso!');
+                console.log('Banco de dados recriado com sucesso!');
                 return true;
             } catch (recreateError) {
-                console.error('❌ Erro ao recriar as tabelas:', recreateError);
+                console.error('Erro ao recriar as tabelas:', recreateError);
                 await sequelize.query('SET FOREIGN_KEY_CHECKS = 1');
                 return false;
             }
@@ -283,23 +307,20 @@ async function syncDatabase() {
 // Função para iniciar o servidor
 async function startServer() {
     try {
-        // Verificar conexão com o banco de dados
         await sequelize.authenticate();
-        console.log('🔌 Conexão com o banco de dados estabelecida com sucesso!');
+        console.log('Conexão com o banco de dados estabelecida com sucesso!');
         
-        // Sincronizar o banco de dados
         const dbSynced = await syncDatabase();
         
         if (!dbSynced) {
-            console.warn('⚠️ Banco de dados sincronizado com avisos. O servidor continuará, mas algumas funcionalidades podem não funcionar corretamente.');
+            console.warn('Banco de dados sincronizado com avisos. O servidor continuará, mas algumas funcionalidades podem não funcionar corretamente.');
         }
         
-        // Iniciar o servidor
         app.listen(PORT, '0.0.0.0', () => {
-            console.log(`\n🚀 Servidor rodando na porta ${PORT}`);
-            console.log(`📱 Acesse: http://localhost:${PORT}`);
-            console.log(`🔗 API disponível em: http://localhost:${PORT}/api`);
-            console.log(`\n📚 Documentação da API:`);
+            console.log(`\nServidor rodando na porta ${PORT}`);
+            console.log(`Acesse: http://localhost:${PORT}`);
+            console.log(`API disponível em: http://localhost:${PORT}/api`);
+            console.log(`\nDocumentação da API:`);
             console.log(`   ┌─────────────────────────────────────────┐`);
             console.log(`   │ GET  /                                    │`);
             console.log(`   │ GET  /health                              │`);
@@ -336,54 +357,49 @@ async function startServer() {
             console.log(`   │ PATCH  /api/reclamacoes/:id/status       │`);
             console.log(`   │ DELETE /api/reclamacoes/:id               │`);
             console.log(`   │                                           │`);
-            console.log(`   │ ANEXOS:                                   │`); // <-- ADICIONADO
+            console.log(`   │ ANEXOS:                                   │`);
             console.log(`   │ POST   /api/anexos                        │`);
             console.log(`   │ GET    /api/anexos/denuncia/:id           │`);
             console.log(`   │ GET    /api/anexos/reclamacao/:id         │`);
             console.log(`   └─────────────────────────────────────────┘`);
             
-            console.log(`\n🔐 DADOS DE ACESSO DO ADMIN:`);
+            console.log(`\nDADOS DE ACESSO DO ADMIN:`);
             console.log(`   ┌─────────────────────────────────────────┐`);
             console.log(`   │ Nº Processo: 00001                       │`);
-            console.log(`   │ Senha: (a senha que você definiu)        │`);
+            console.log(`   │ Senha: admin123                          │`);
             console.log(`   │ Email: admin@sistema.com                 │`);
             console.log(`   └─────────────────────────────────────────┘`);
-            console.log(`\n💡 Se o admin não existir, será criado com a senha: admin123`);
         });
         
     } catch (error) {
-        console.error('❌ Erro fatal ao iniciar o servidor:', error);
+        console.error('Erro fatal ao iniciar o servidor:', error);
         process.exit(1);
     }
 }
 
 // Tratamento de erros não capturados
 process.on('uncaughtException', (error) => {
-    console.error('❌ Exceção não capturada:', error);
+    console.error('Exceção não capturada:', error);
     console.error('Stack trace:', error.stack);
-    // Não encerrar o servidor, apenas logar o erro
-    // process.exit(1);
 });
 
 process.on('unhandledRejection', (error) => {
-    console.error('❌ Promessa rejeitada não tratada:', error);
+    console.error('Promessa rejeitada não tratada:', error);
     console.error('Stack trace:', error.stack);
-    // Não encerrar o servidor, apenas logar o erro
-    // process.exit(1);
 });
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-    console.log('🛑 Recebido sinal SIGTERM. Encerrando servidor...');
+    console.log('Recebido sinal SIGTERM. Encerrando servidor...');
     process.exit(0);
 });
 
 process.on('SIGINT', () => {
-    console.log('🛑 Recebido sinal SIGINT. Encerrando servidor...');
+    console.log('Recebido sinal SIGINT. Encerrando servidor...');
     process.exit(0);
 });
 
 // Iniciar o servidor
 startServer();
 
-module.exports = app; // Para testes
+module.exports = app;

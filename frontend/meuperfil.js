@@ -1,9 +1,7 @@
 let usuarioLogado = null;
 let dadosOriginais = {};
 
-// ============================================
 // CONFIGURAÇÕES DA API
-// ============================================
 const API_URL = 'http://localhost:3000/api';
 
 // Função para obter token de autenticação
@@ -44,19 +42,17 @@ async function apiRequest(endpoint, options = {}) {
     }
 }
 
-// ============================================
 // FUNÇÕES DE UTILITÁRIO
-// ============================================
 
 // Função para verificar autenticação
 async function checkAuth() {
     const token = getAuthToken();
     const usuarioSession = sessionStorage.getItem('usuarioLogado');
     
-    console.log('🔍 Verificando autenticação...');
+    console.log('Verificando autenticação...');
     
     if (!token || !usuarioSession) {
-        console.log('❌ Token ou session não encontrado, redirecionando para login...');
+        console.log('Token ou session não encontrado, redirecionando para login...');
         window.location.href = './login.html';
         return null;
     }
@@ -82,7 +78,7 @@ async function checkAuth() {
         return usuarioLogado;
         
     } catch (error) {
-        console.error('⚠️ Erro ao buscar dados da API, usando dados da session:', error);
+        console.error('Erro ao buscar dados da API, usando dados da session:', error);
         usuarioLogado = usuario;
         return usuarioLogado;
     }
@@ -121,32 +117,22 @@ function formatDateOnly(data) {
     return date.toISOString().split('T')[0];
 }
 
-// Função para validar nome
-function validarNome(nome) {
-    const regex = /^[A-Za-zÀ-ÿ\s]+$/;
-    return regex.test(nome);
-}
-
-// ============================================
 // FUNÇÕES DE CONTADORES DINÂMICOS
-// ============================================
 
 // Função para carregar contadores de reclamações e denúncias
 async function carregarContadores() {
     if (!usuarioLogado) {
-        console.warn('⚠️ Usuário não logado, não é possível carregar contadores');
+        console.warn('Usuário não logado, não é possível carregar contadores');
         return;
     }
     
     const userId = usuarioLogado.id || usuarioLogado.id_usuario;
-    console.log('📊 Carregando contadores para usuário:', userId);
+    console.log('Carregando contadores para usuário:', userId);
     
     try {
-        // Buscar reclamações do usuário - tentar diferentes endpoints
         let reclamacoesData = [];
         let denunciasData = [];
         
-        // Tentar endpoint /minhas
         try {
             const reclamacoes = await apiRequest(`/reclamacoes/minhas/${userId}`, {
                 method: 'GET'
@@ -160,7 +146,6 @@ async function carregarContadores() {
             console.log('Endpoint /minhas não encontrado, tentando /usuario');
         }
         
-        // Tentar endpoint /usuario
         if (reclamacoesData.length === 0) {
             try {
                 const reclamacoes = await apiRequest(`/reclamacoes/usuario/${userId}`, {
@@ -176,7 +161,6 @@ async function carregarContadores() {
             }
         }
         
-        // Buscar denúncias do usuário
         try {
             const denuncias = await apiRequest(`/denuncias/minhas/${userId}`, {
                 method: 'GET'
@@ -205,7 +189,6 @@ async function carregarContadores() {
             }
         }
         
-        // Atualizar contadores na interface
         const reclamacoesCount = document.getElementById('reclamacoesCount');
         const denunciasCount = document.getElementById('denunciasCount');
         
@@ -214,7 +197,6 @@ async function carregarContadores() {
         
         if (reclamacoesCount) {
             reclamacoesCount.textContent = totalReclamacoes;
-            // Adicionar classe de destaque se tiver reclamações
             if (totalReclamacoes > 0) {
                 reclamacoesCount.classList.add('bg-orange-500', 'text-white');
                 reclamacoesCount.classList.remove('bg-gray-100', 'text-gray-600');
@@ -226,7 +208,6 @@ async function carregarContadores() {
         
         if (denunciasCount) {
             denunciasCount.textContent = totalDenuncias;
-            // Adicionar classe de destaque se tiver denúncias
             if (totalDenuncias > 0) {
                 denunciasCount.classList.add('bg-red-500', 'text-white');
                 denunciasCount.classList.remove('bg-red-100', 'text-red-600');
@@ -236,16 +217,14 @@ async function carregarContadores() {
             }
         }
         
-        console.log(`📊 Contadores atualizados: ${totalReclamacoes} reclamações, ${totalDenuncias} denúncias`);
+        console.log(`Contadores atualizados: ${totalReclamacoes} reclamações, ${totalDenuncias} denúncias`);
         
-        // Salvar contadores no sessionStorage para usar em outras páginas
         sessionStorage.setItem('contadoresReclamacoes', totalReclamacoes);
         sessionStorage.setItem('contadoresDenuncias', totalDenuncias);
         
     } catch (error) {
-        console.error('❌ Erro ao carregar contadores:', error);
+        console.error('Erro ao carregar contadores:', error);
         
-        // Tentar usar dados do sessionStorage como fallback
         const cachedReclamacoes = sessionStorage.getItem('contadoresReclamacoes');
         const cachedDenuncias = sessionStorage.getItem('contadoresDenuncias');
         
@@ -261,73 +240,19 @@ async function carregarContadores() {
     }
 }
 
-// Função para atualizar avatar dinamicamente
-function atualizarAvatarGlobal() {
-    if (!usuarioLogado) {
-        console.warn('⚠️ usuarioLogado é null/undefined');
-        return;
-    }
-    
-    const initials = getInitials(usuarioLogado.nome);
-    const fotoPerfil = usuarioLogado.fotoPerfil;
-    
-    // Atualizar elementos de avatar
-    const usuarioAvatar = document.getElementById('usuarioAvatar');
-    const avatarMobile = document.getElementById('avatarMobile');
-    const profileImage = document.getElementById('profileImage');
-    const profilePreview = document.getElementById('profilePreview');
-    const removePhotoBtn = document.getElementById('removePhoto');
-    
-    if (usuarioAvatar) {
-        if (fotoPerfil && fotoPerfil !== '') {
-            usuarioAvatar.style.backgroundImage = `url('${fotoPerfil}')`;
-            usuarioAvatar.style.backgroundSize = 'cover';
-            usuarioAvatar.style.backgroundPosition = 'center';
-            usuarioAvatar.textContent = '';
-        } else {
-            usuarioAvatar.style.backgroundImage = '';
-            usuarioAvatar.textContent = initials;
-        }
-    }
-    
-    if (avatarMobile) {
-        if (fotoPerfil && fotoPerfil !== '') {
-            avatarMobile.style.backgroundImage = `url('${fotoPerfil}')`;
-            avatarMobile.style.backgroundSize = 'cover';
-            avatarMobile.style.backgroundPosition = 'center';
-            avatarMobile.textContent = '';
-        } else {
-            avatarMobile.style.backgroundImage = '';
-            avatarMobile.textContent = initials;
-        }
-    }
-    
-    // Área de edição de perfil
-    if (profilePreview && fotoPerfil) {
-        if (profileImage) profileImage.classList.add('hidden');
-        profilePreview.classList.remove('hidden');
-        profilePreview.src = fotoPerfil;
-        if (removePhotoBtn) removePhotoBtn.classList.remove('hidden');
-    } else if (profileImage) {
-        profileImage.classList.remove('hidden');
-        profileImage.textContent = initials;
-        if (profilePreview) profilePreview.classList.add('hidden');
-        if (removePhotoBtn) removePhotoBtn.classList.add('hidden');
-    }
-}
+// Função para atualizar avatar globalmente
+// Avatar rendering and modal are delegated to shared/profile.js
+// Use the shared implementation if available: window.atualizarAvatarGlobal()
 
-// ============================================
 // FUNÇÕES DE CARREGAMENTO E ATUALIZAÇÃO
-// ============================================
 
 // Função para carregar dados do perfil
 function carregarPerfil() {
     if (!usuarioLogado) {
-        console.error('❌ usuarioLogado não está definido em carregarPerfil');
+        console.error('usuarioLogado não está definido em carregarPerfil');
         return;
     }
     
-    // Preencher campos com dados do usuário
     const nomeCompleto = document.getElementById('nomeCompleto');
     const email = document.getElementById('email');
     const numeroProcesso = document.getElementById('numeroProcesso');
@@ -355,45 +280,57 @@ function carregarPerfil() {
     if (sala) sala.value = usuarioLogado.sala || '';
     if (statusConta) statusConta.value = usuarioLogado.status || 'ativo';
     
+    const fotoPerfil = usuarioLogado.foto_perfil || usuarioLogado.fotoPerfil;
+    const profilePreview = document.getElementById('profilePreview');
+    const profileImage = document.getElementById('profileImage');
+    const removePhotoBtn = document.getElementById('removePhoto');
+    
+    if (fotoPerfil && fotoPerfil !== '') {
+        if (profilePreview) {
+            profilePreview.classList.remove('hidden');
+            profilePreview.src = fotoPerfil;
+            if (profileImage) profileImage.classList.add('hidden');
+        }
+        if (removePhotoBtn) removePhotoBtn.classList.remove('hidden');
+    } else {
+        if (profilePreview) profilePreview.classList.add('hidden');
+        if (profileImage) {
+            profileImage.classList.remove('hidden');
+            profileImage.textContent = getInitials(usuarioLogado.nome);
+        }
+        if (removePhotoBtn) removePhotoBtn.classList.add('hidden');
+    }
+    
     dadosOriginais = { ...usuarioLogado };
 }
 
 // Função para atualizar interface
 function atualizarInterface() {
     if (!usuarioLogado) {
-        console.error('❌ usuarioLogado não está definido em atualizarInterface');
+        console.error('usuarioLogado não está definido em atualizarInterface');
         return;
     }
     
-    // Atualizar nome do usuário na navbar
     const usuarioNome = document.getElementById('usuarioNome');
     if (usuarioNome) usuarioNome.textContent = usuarioLogado.nome || 'Usuário';
     
-    // Atualizar número do processo
     const processoNumero = document.getElementById('processoNumero');
     if (processoNumero) processoNumero.textContent = usuarioLogado.numero_processo || 'Não informado';
     
     const processoNumeroMobile = document.getElementById('processoNumeroMobile');
     if (processoNumeroMobile) processoNumeroMobile.textContent = usuarioLogado.numero_processo || 'Não informado';
     
-    // Atualizar saudação
     const saudacaoNome = document.getElementById('saudacaoNome');
     if (saudacaoNome) saudacaoNome.textContent = getPrimeiroNome(usuarioLogado.nome);
     
-    // Atualizar nome mobile
     const nomeMobile = document.getElementById('nomeMobile');
     if (nomeMobile) nomeMobile.textContent = usuarioLogado.nome || 'Usuário';
     
-    // Atualizar avatar
-    atualizarAvatarGlobal();
-    
-    // Carregar contadores dinâmicos
+    if (window.atualizarAvatarGlobal) window.atualizarAvatarGlobal();
     carregarContadores();
 }
 
-// ============================================
-// FUNÇÕES DE VALIDAÇÃO DE CAMPOS
-// ============================================
+// FUNÇÕES DE VALIDAÇÃO DE CAMPO
 
 function setupValidacaoCampos() {
     const nomeInput = document.getElementById('nomeCompleto');
@@ -439,9 +376,7 @@ function setupValidacaoCampos() {
     }
 }
 
-// ============================================
 // FUNÇÕES DE UPLOAD DE FOTO
-// ============================================
 
 async function salvarFotoPerfil(fotoBase64) {
     try {
@@ -449,14 +384,14 @@ async function salvarFotoPerfil(fotoBase64) {
         const response = await apiRequest(`/usuarios/${userId}`, {
             method: 'PUT',
             body: JSON.stringify({
-                fotoPerfil: fotoBase64
+                foto_perfil: fotoBase64
             })
         });
         
         if (response.success) {
-            usuarioLogado.fotoPerfil = fotoBase64;
+            usuarioLogado.foto_perfil = fotoBase64;
             sessionStorage.setItem('usuarioLogado', JSON.stringify(usuarioLogado));
-            atualizarAvatarGlobal();
+            if (window.atualizarAvatarGlobal) window.atualizarAvatarGlobal();
             return true;
         }
         return false;
@@ -472,14 +407,14 @@ async function removerFotoPerfil() {
         const response = await apiRequest(`/usuarios/${userId}`, {
             method: 'PUT',
             body: JSON.stringify({
-                fotoPerfil: null
+                foto_perfil: null
             })
         });
         
         if (response.success) {
-            delete usuarioLogado.fotoPerfil;
+            delete usuarioLogado.foto_perfil;
             sessionStorage.setItem('usuarioLogado', JSON.stringify(usuarioLogado));
-            atualizarAvatarGlobal();
+            if (window.atualizarAvatarGlobal) window.atualizarAvatarGlobal();
             return true;
         }
         return false;
@@ -559,11 +494,8 @@ function setupUploadFoto() {
     }
 }
 
-// ============================================
 // FUNÇÕES PRINCIPAIS DO PERFIL
-// ============================================
 
-// Salvar perfil
 function setupSalvarPerfil() {
     const profileForm = document.getElementById('profileForm');
     if (!profileForm) return;
@@ -639,9 +571,7 @@ function resetForm() {
     mostrarNotificacao('Alterações descartadas', 'info');
 }
 
-// ============================================
 // FUNÇÕES DE SEGURANÇA
-// ============================================
 
 async function alterarSenha() {
     const senhaAtual = document.getElementById('senhaAtual').value;
@@ -724,16 +654,14 @@ async function excluirContaPermanentemente() {
 }
 
 function confirmarExclusao() {
-    if (confirm('⚠️ Tem certeza que deseja excluir sua conta? Esta ação é irreversível!')) {
-        if (confirm('❌ Todos os seus dados serão permanentemente removidos. Deseja continuar?')) {
+    if (confirm('Tem certeza que deseja excluir sua conta? Esta ação é irreversível!')) {
+        if (confirm('Todos os seus dados serão permanentemente removidos. Deseja continuar?')) {
             excluirContaPermanentemente();
         }
     }
 }
 
-// ============================================
 // FUNÇÃO DE NOTIFICAÇÃO
-// ============================================
 
 function mostrarNotificacao(mensagem, tipo) {
     const notificacoesAntigas = document.querySelectorAll('.notification-toast');
@@ -762,12 +690,9 @@ function mostrarNotificacao(mensagem, tipo) {
     }, 3000);
 }
 
-// ============================================
 // FUNÇÃO DE LOGOUT
-// ============================================
 
 function logout() {
-    // Criar modal de confirmação
     const existingModal = document.getElementById('logoutConfirmModal');
     if (existingModal) existingModal.remove();
     
@@ -776,7 +701,6 @@ function logout() {
     modal.className = 'fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 backdrop-blur-sm';
     modal.style.animation = 'fadeIn 0.3s ease';
     
-    // Adicionar estilos
     if (!document.getElementById('logoutStyles')) {
         const style = document.createElement('style');
         style.id = 'logoutStyles';
@@ -792,7 +716,6 @@ function logout() {
     
     modal.innerHTML = `
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden modal-slide-in">
-            <!-- Cabeçalho -->
             <div class="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-4">
                 <div class="flex items-center space-x-3">
                     <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg">
@@ -802,14 +725,12 @@ function logout() {
                 </div>
             </div>
             
-            <!-- Corpo -->
             <div class="px-6 py-6 text-center">
                 <i class="fas fa-question-circle text-orange-500 text-5xl mb-4"></i>
                 <p class="text-gray-700 text-base mb-2">Tem certeza que deseja sair?</p>
                 <p class="text-gray-500 text-sm">Você será redirecionado para a página de login.</p>
             </div>
             
-            <!-- Botões -->
             <div class="px-6 py-4 bg-gray-50 flex justify-end space-x-3">
                 <button id="logoutCancelBtn" class="px-5 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition font-medium">
                     <i class="fas fa-times mr-2"></i>Cancelar
@@ -828,11 +749,9 @@ function logout() {
         setTimeout(() => modal.remove(), 300);
     };
     
-    // Confirmar logout
     document.getElementById('logoutConfirmBtn')?.addEventListener('click', () => {
         closeModal();
         
-        // Mostrar toast de sucesso
         const toast = document.createElement('div');
         toast.className = 'fixed top-20 right-4 px-6 py-3 rounded-lg shadow-lg z-50 bg-green-500 text-white toast-slide-in';
         toast.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Sessão encerrada com sucesso!';
@@ -840,51 +759,41 @@ function logout() {
         
         setTimeout(() => toast.remove(), 1500);
         
-        // Limpar sessão e REDIRECIONAR PARA O LOGIN
         setTimeout(() => {
             sessionStorage.removeItem('usuarioLogado');
             sessionStorage.removeItem('token');
-            window.location.href = '../login.html';
+            window.location.href = './login.html';
         }, 500);
     });
     
-    // Cancelar logout
     document.getElementById('logoutCancelBtn')?.addEventListener('click', closeModal);
-    
-    // Fechar ao clicar fora
     modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 }
 
-
-// ============================================
 // FUNÇÃO PARA ATUALIZAR CONTADORES PERIODICAMENTE
-// ============================================
 
 function iniciarAtualizacaoPeriodica() {
-    // Atualizar contadores a cada 30 segundos
     setInterval(() => {
         if (usuarioLogado) {
-            console.log('🔄 Atualizando contadores periodicamente...');
+            console.log('Atualizando contadores periodicamente...');
             carregarContadores();
         }
-    }, 30000); // 30 segundos
+    }, 30000);
 }
 
-// ============================================
 // INICIALIZAÇÃO
-// ============================================
 
 document.addEventListener('DOMContentLoaded', async function() {
-    console.log('🚀 Inicializando página de perfil...');
+    console.log('Inicializando página de perfil...');
     
     usuarioLogado = await checkAuth();
     
     if (!usuarioLogado) {
-        console.error('❌ Falha na autenticação');
+        console.error('Falha na autenticação');
         return;
     }
     
-    console.log('✅ Usuário logado:', usuarioLogado);
+    console.log('Usuário logado:', usuarioLogado);
     
     carregarPerfil();
     atualizarInterface();
@@ -893,13 +802,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     setupSalvarPerfil();
     iniciarAtualizacaoPeriodica();
     
-    console.log('🎉 Perfil inicializado com sucesso!');
+    console.log('Perfil inicializado com sucesso!');
 });
 
-// ============================================
 // EXPORTAR FUNÇÕES GLOBAIS
-// ============================================
-
 window.logout = logout;
 window.resetForm = resetForm;
 window.alterarSenha = alterarSenha;

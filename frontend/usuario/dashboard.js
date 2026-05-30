@@ -1,44 +1,16 @@
-const API_URL = 'http://localhost:3000/api';
-let usuarioLogado = null;
-let denunciasUsuario = [];
-let reclamacoesUsuario = [];
-let todasAtividades = [];
-let barChart, pieChart;
-let intervaloAtualizacao = null;
+// dashboardAdmin.js - Script do Painel Administrativo
 
-// ============================================
-// TOAST E NOTIFICAÇÕES MODERNAS
-// ============================================
+let denunciasData = [];
+let reclamacoesData = [];
+let usuariosData = [];
+let barChart = null;
+let pieChart = null;
 
-function showToast(type, message, duration = 3000) {
-    const existingToasts = document.querySelectorAll('.custom-toast');
-    existingToasts.forEach(toast => toast.remove());
-    
-    const config = {
-        success: { icon: 'fa-check-circle', bg: 'bg-green-500' },
-        error: { icon: 'fa-exclamation-circle', bg: 'bg-red-500' },
-        warning: { icon: 'fa-exclamation-triangle', bg: 'bg-yellow-500' },
-        info: { icon: 'fa-info-circle', bg: 'bg-blue-500' }
-    };
-    
-    const currentConfig = config[type] || config.info;
-    
-    const toast = document.createElement('div');
-    toast.className = `custom-toast fixed top-20 right-4 px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300 transform translate-x-0 ${currentConfig.bg} text-white toast-slide-in`;
-    toast.innerHTML = `
-        <div class="flex items-center space-x-2">
-            <i class="fas ${currentConfig.icon} text-lg"></i>
-            <span>${escapeHtml(message)}</span>
-        </div>
-    `;
-    
-    document.body.appendChild(toast);
-    
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateX(100%)';
-        setTimeout(() => toast.remove(), 300);
-    }, duration);
+function formatFileSize(bytes) {
+    if (!bytes) return '';
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return (bytes / Math.pow(1024, i)).toFixed(2) + ' ' + sizes[i];
 }
 
 function escapeHtml(text) {
@@ -46,185 +18,6 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
-}
-
-// ============================================
-// MODAL MODERNO E INTERATIVO
-// ============================================
-function showModal(type, title, message, detalhes = null) {
-    const existingModal = document.getElementById('customModal');
-    if (existingModal) existingModal.remove();
-    
-    const config = {
-        success: { 
-            icon: 'fa-check-circle', 
-            iconColor: 'text-green-500', 
-            bgGradient: 'from-green-500 to-green-600',
-            buttonColor: 'bg-green-500 hover:bg-green-600'
-        },
-        error: { 
-            icon: 'fa-exclamation-circle', 
-            iconColor: 'text-red-500', 
-            bgGradient: 'from-red-500 to-red-600',
-            buttonColor: 'bg-red-500 hover:bg-red-600'
-        },
-        info: { 
-            icon: 'fa-info-circle', 
-            iconColor: 'text-blue-500', 
-            bgGradient: 'from-blue-500 to-blue-600',
-            buttonColor: 'bg-blue-500 hover:bg-blue-600'
-        },
-        warning: { 
-            icon: 'fa-exclamation-triangle', 
-            iconColor: 'text-yellow-500', 
-            bgGradient: 'from-yellow-500 to-yellow-600',
-            buttonColor: 'bg-yellow-500 hover:bg-yellow-600'
-        },
-        detalhe: { 
-            icon: 'fa-file-alt', 
-            iconColor: 'text-orange-500', 
-            bgGradient: 'from-orange-500 to-orange-600',
-            buttonColor: 'bg-orange-500 hover:bg-orange-600'
-        }
-    };
-    
-    const current = config[type] || config.info;
-    
-    const modal = document.createElement('div');
-    modal.id = 'customModal';
-    modal.className = 'fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 backdrop-blur-sm';
-    modal.style.animation = 'fadeIn 0.3s ease';
-    
-    if (!document.getElementById('modalStyles')) {
-        const style = document.createElement('style');
-        style.id = 'modalStyles';
-        style.textContent = `
-            @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-            @keyframes slideIn { from { transform: translateY(-50px) scale(0.9); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
-            @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-            .modal-content { animation: slideIn 0.3s ease; }
-            .toast-slide-in { animation: slideInRight 0.3s ease; }
-        `;
-        document.head.appendChild(style);
-    }
-    
-    let detalhesHtml = '';
-    if (detalhes) {
-        detalhesHtml = `
-            <div class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div class="space-y-3">
-                    ${detalhes.protocolo ? `
-                        <div class="flex items-center justify-between pb-2 border-b border-gray-200">
-                            <span class="text-xs text-gray-500 font-medium">PROTOCOLO</span>
-                            <span class="text-sm font-mono font-bold text-gray-800">${detalhes.protocolo}</span>
-                        </div>
-                    ` : ''}
-                    ${detalhes.titulo ? `
-                        <div>
-                            <span class="text-xs text-gray-500 font-medium block mb-1">TÍTULO</span>
-                            <span class="text-sm font-semibold text-gray-800">${escapeHtml(detalhes.titulo)}</span>
-                        </div>
-                    ` : ''}
-                    ${detalhes.descricao ? `
-                        <div>
-                            <span class="text-xs text-gray-500 font-medium block mb-1">DESCRIÇÃO</span>
-                            <p class="text-sm text-gray-700 leading-relaxed">${escapeHtml(detalhes.descricao)}</p>
-                        </div>
-                    ` : ''}
-                    ${detalhes.data ? `
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs text-gray-500 font-medium">DATA DO OCORRIDO</span>
-                            <span class="text-sm text-gray-700">${detalhes.data}</span>
-                        </div>
-                    ` : ''}
-                    ${detalhes.local ? `
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs text-gray-500 font-medium">LOCAL</span>
-                            <span class="text-sm text-gray-700">${escapeHtml(detalhes.local)}</span>
-                        </div>
-                    ` : ''}
-                    ${detalhes.status ? `
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs text-gray-500 font-medium">STATUS</span>
-                            <span class="px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(detalhes.status)}">${translateStatus(detalhes.status)}</span>
-                        </div>
-                    ` : ''}
-                    ${detalhes.categoria ? `
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs text-gray-500 font-medium">CATEGORIA</span>
-                            <span class="text-sm text-gray-700">${detalhes.categoria}</span>
-                        </div>
-                    ` : ''}
-                </div>
-            </div>
-        `;
-    }
-    
-    modal.innerHTML = `
-        <div class="modal-content bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
-            <div class="bg-gradient-to-r ${current.bgGradient} px-6 py-4">
-                <div class="flex items-center space-x-3">
-                    <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg">
-                        <i class="fas ${current.icon} ${current.iconColor} text-2xl"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-white">${escapeHtml(title)}</h3>
-                </div>
-            </div>
-            <div class="px-6 py-6">
-                <p class="text-gray-600 text-base leading-relaxed">${escapeHtml(message)}</p>
-                ${detalhesHtml}
-            </div>
-            <div class="px-6 py-4 bg-gray-50 flex justify-end">
-                <button id="modalCloseBtn" class="px-6 py-2 ${current.buttonColor} text-white rounded-lg transition transform hover:scale-105 font-medium shadow-md hover:shadow-lg">
-                    <i class="fas fa-check mr-2"></i>Fechar
-                </button>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-    
-    const closeModal = () => {
-        modal.style.opacity = '0';
-        setTimeout(() => modal.remove(), 300);
-    };
-    
-    document.getElementById('modalCloseBtn')?.addEventListener('click', closeModal);
-    modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
-}
-
-// ============================================
-// FUNÇÕES DE AUTENTICAÇÃO E UTILITÁRIOS
-// ============================================
-
-function checkAuth() {
-    const usuario = sessionStorage.getItem('usuarioLogado');
-    if (!usuario) { 
-        window.location.href = './login.html'; 
-        return null; 
-    }
-    return JSON.parse(usuario);
-}
-
-function getInitials(nome) {
-    if (!nome) return 'U';
-    const partes = nome.trim().split(' ');
-    if (partes.length === 1) return partes[0].substring(0, 2).toUpperCase();
-    return (partes[0].charAt(0) + partes[partes.length - 1].charAt(0)).toUpperCase();
-}
-
-function formatDate(data) {
-    if (!data) return 'Data não informada';
-    const date = new Date(data);
-    if (isNaN(date.getTime())) return 'Data inválida';
-    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-}
-
-function formatDateTime(data) {
-    if (!data) return 'Data não informada';
-    const date = new Date(data);
-    if (isNaN(date.getTime())) return 'Data inválida';
-    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 function getStatusColor(status) {
@@ -253,576 +46,724 @@ function translateStatus(status) {
     return traducoes[status] || status;
 }
 
-// ============================================
-// FUNÇÕES DE CARREGAMENTO DE DADOS
-// ============================================
-
-async function carregarDenuncias() {
+async function buscarAnexos(denunciaId, reclamacaoId) {
     try {
-        const response = await fetch(`${API_URL}/denuncias?usuario_id=${usuarioLogado.id}`);
-        if (response.ok) {
-            const data = await response.json();
-            denunciasUsuario = Array.isArray(data) ? data : (data.data || []);
-            console.log(`✅ ${denunciasUsuario.length} denúncias carregadas`);
+        let url = '';
+        const usuarioLogado = JSON.parse(sessionStorage.getItem('usuarioLogado') || '{}');
+        const usuarioIdQuery = usuarioLogado?.id ? `?usuario_id=${usuarioLogado.id}` : '';
+        if (denunciaId) {
+            url = `http://localhost:3000/api/anexos/denuncia/${denunciaId}${usuarioIdQuery}`;
+        } else if (reclamacaoId) {
+            url = `http://localhost:3000/api/anexos/reclamacao/${reclamacaoId}${usuarioIdQuery}`;
         } else {
-            throw new Error('Erro ao carregar denúncias');
+            return [];
         }
+        
+        const response = await fetch(url);
+        const data = await response.json();
+        return data.success ? data.anexos : [];
     } catch (error) {
-        console.error('Erro ao carregar denúncias:', error);
-        denunciasUsuario = [];
-        showToast('error', 'Erro ao carregar denúncias');
+        console.error('Erro ao buscar anexos:', error);
+        return [];
     }
 }
 
-async function carregarReclamacoes() {
-    try {
-        const response = await fetch(`${API_URL}/reclamacoes?usuario_id=${usuarioLogado.id}`);
-        if (response.ok) {
-            const data = await response.json();
-            reclamacoesUsuario = Array.isArray(data) ? data : (data.data || []);
-            console.log(`✅ ${reclamacoesUsuario.length} reclamações carregadas`);
+function criarUrlAnexo(anexo) {
+    if (!anexo) return '#';
+    if (anexo.base64) {
+        return anexo.base64.startsWith('data:')
+            ? anexo.base64
+            : `data:${anexo.tipo || 'application/octet-stream'};base64,${anexo.base64}`;
+    }
+    if (anexo.url) return anexo.url;
+    if (anexo.caminho) return `http://localhost:3000${anexo.caminho}`;
+    return '#';
+}
+
+function showModalWithAttachments(type, title, message, detalhes = null, anexos = []) {
+    const existingModal = document.getElementById('customModal');
+    if (existingModal) existingModal.remove();
+    
+    const config = {
+        success: { icon: 'fa-check-circle', iconColor: 'text-green-500', bgGradient: 'from-green-500 to-green-600', buttonColor: 'bg-green-500' },
+        error: { icon: 'fa-exclamation-circle', iconColor: 'text-red-500', bgGradient: 'from-red-500 to-red-600', buttonColor: 'bg-red-500' },
+        info: { icon: 'fa-info-circle', iconColor: 'text-blue-500', bgGradient: 'from-blue-500 to-blue-600', buttonColor: 'bg-blue-500' },
+        warning: { icon: 'fa-exclamation-triangle', iconColor: 'text-yellow-500', bgGradient: 'from-yellow-500 to-yellow-600', buttonColor: 'bg-yellow-500' },
+        detalhe: { icon: 'fa-file-alt', iconColor: 'text-orange-500', bgGradient: 'from-orange-500 to-orange-600', buttonColor: 'bg-orange-500' }
+    };
+    
+    const current = config[type] || config.info;
+    
+    const modal = document.createElement('div');
+    modal.id = 'customModal';
+    modal.className = 'fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 backdrop-blur-sm';
+    modal.style.animation = 'fadeIn 0.3s ease';
+    
+    if (!document.getElementById('modalStyles')) {
+        const style = document.createElement('style');
+        style.id = 'modalStyles';
+        style.textContent = `
+            @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes slideIn { from { transform: translateY(-50px) scale(0.9); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
+            @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+            .modal-content { animation: slideIn 0.3s ease; }
+            .toast-slide-in { animation: slideInRight 0.3s ease; }
+            .anexo-item { transition: all 0.2s ease; }
+            .anexo-item:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    let anexosHtml = '';
+    if (anexos && anexos.length > 0) {
+        anexosHtml = `
+            <div class="mt-4">
+                <div class="flex items-center space-x-2 mb-3">
+                    <i class="fas fa-paperclip text-orange-500 text-sm"></i>
+                    <span class="text-xs font-semibold text-gray-700 uppercase">Anexos (${anexos.length})</span>
+                </div>
+                <div class="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
+                    ${anexos.map(anexo => {
+                        const fileName = anexo.nome || 'Arquivo';
+                        const fileExt = fileName.split('.').pop().toLowerCase();
+                        const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(fileExt);
+                        const fileUrl = criarUrlAnexo(anexo);
+                        
+                        let fileIcon = 'fa-file';
+                        if (isImage) fileIcon = 'fa-file-image';
+                        else if (fileExt === 'pdf') fileIcon = 'fa-file-pdf';
+                        else if (['doc', 'docx'].includes(fileExt)) fileIcon = 'fa-file-word';
+                        else if (['xls', 'xlsx'].includes(fileExt)) fileIcon = 'fa-file-excel';
+                        else if (['zip', 'rar', '7z'].includes(fileExt)) fileIcon = 'fa-file-archive';
+                        
+                        return `
+                            <div class="anexo-item bg-gray-50 rounded-lg p-3 border border-gray-200 hover:border-orange-300 transition cursor-pointer"
+                                 onclick="window.open('${fileUrl}', '_blank')">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+                                            <i class="fas ${fileIcon} text-orange-600 text-sm"></i>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-sm font-medium text-gray-800 truncate" title="${fileName}">
+                                                ${fileName.length > 30 ? fileName.substring(0, 30) + '...' : fileName}
+                                            </p>
+                                            <p class="text-xs text-gray-500">
+                                                ${isImage ? 'Imagem' : 'Documento'}
+                                                ${anexo.tamanho ? ` • ${formatFileSize(anexo.tamanho)}` : ''}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <i class="fas fa-external-link-alt text-gray-400 text-xs"></i>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+    } else {
+        anexosHtml = `
+            <div class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200 text-center">
+                <i class="fas fa-paperclip text-gray-400 text-lg mb-2 block"></i>
+                <p class="text-xs text-gray-500">Nenhum anexo enviado</p>
+            </div>
+        `;
+    }
+    
+    let detalhesHtml = '';
+    if (detalhes) {
+        detalhesHtml = `
+            <div class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div class="space-y-3">
+                    ${detalhes.protocolo ? `<div class="flex items-center justify-between pb-2 border-b border-gray-200"><span class="text-xs text-gray-500 font-medium">PROTOCOLO</span><span class="text-sm font-mono font-bold text-gray-800">${detalhes.protocolo}</span></div>` : ''}
+                    ${detalhes.titulo ? `<div><span class="text-xs text-gray-500 font-medium block mb-1">TÍTULO</span><span class="text-sm font-semibold text-gray-800">${escapeHtml(detalhes.titulo)}</span></div>` : ''}
+                    ${detalhes.descricao ? `<div><span class="text-xs text-gray-500 font-medium block mb-1">DESCRIÇÃO</span><p class="text-sm text-gray-700 leading-relaxed">${escapeHtml(detalhes.descricao)}</p></div>` : ''}
+                    ${detalhes.data ? `<div class="flex items-center justify-between"><span class="text-xs text-gray-500 font-medium">DATA DO OCORRIDO</span><span class="text-sm text-gray-700">${detalhes.data}</span></div>` : ''}
+                    ${detalhes.local ? `<div class="flex items-center justify-between"><span class="text-xs text-gray-500 font-medium">LOCAL</span><span class="text-sm text-gray-700">${escapeHtml(detalhes.local)}</span></div>` : ''}
+                    ${detalhes.status ? `<div class="flex items-center justify-between"><span class="text-xs text-gray-500 font-medium">STATUS</span><span class="px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(detalhes.status)}">${translateStatus(detalhes.status)}</span></div>` : ''}
+                    ${detalhes.categoria ? `<div class="flex items-center justify-between"><span class="text-xs text-gray-500 font-medium">CATEGORIA</span><span class="text-sm text-gray-700">${escapeHtml(detalhes.categoria)}</span></div>` : ''}
+                    ${detalhes.usuario ? `<div class="flex items-center justify-between"><span class="text-xs text-gray-500 font-medium">USUÁRIO</span><span class="text-sm text-gray-700">${escapeHtml(detalhes.usuario)}</span></div>` : ''}
+                    ${detalhes.email ? `<div class="flex items-center justify-between"><span class="text-xs text-gray-500 font-medium">EMAIL</span><span class="text-sm text-gray-700">${escapeHtml(detalhes.email)}</span></div>` : ''}
+                </div>
+            </div>
+        `;
+    }
+    
+    modal.innerHTML = `
+        <div class="modal-content bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 overflow-hidden">
+            <div class="bg-gradient-to-r ${current.bgGradient} px-6 py-4">
+                <div class="flex items-center space-x-3">
+                    <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg">
+                        <i class="fas ${current.icon} ${current.iconColor} text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white">${escapeHtml(title)}</h3>
+                </div>
+            </div>
+            <div class="px-6 py-6 max-h-[70vh] overflow-y-auto">
+                <p class="text-gray-600 text-base leading-relaxed">${escapeHtml(message)}</p>
+                ${detalhesHtml}
+                ${anexosHtml}
+            </div>
+            <div class="px-6 py-4 bg-gray-50 flex justify-end">
+                <button id="modalCloseBtn" class="px-6 py-2 ${current.buttonColor} text-white rounded-lg transition transform hover:scale-105 font-medium shadow-md hover:shadow-lg">
+                    <i class="fas fa-check mr-2"></i>Fechar
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    const closeModal = () => {
+        modal.style.opacity = '0';
+        setTimeout(() => modal.remove(), 300);
+    };
+    
+    document.getElementById('modalCloseBtn')?.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+}
+
+function showToast(type, message) {
+    const toast = document.createElement('div');
+    toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300 ${type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500'} text-white`;
+    toast.style.animation = 'slideInRight 0.3s ease';
+    toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'} mr-2"></i>${message}`;
+    document.body.appendChild(toast);
+    
+    if (!document.getElementById('toastStyles')) {
+        const style = document.createElement('style');
+        style.id = 'toastStyles';
+        style.textContent = `@keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }`;
+        document.head.appendChild(style);
+    }
+    
+    setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 500); }, 3000);
+}
+
+function verificarUsuario() {
+    const usuarioLogado = sessionStorage.getItem('usuarioLogado');
+    if (!usuarioLogado) {
+        window.location.href = '../login.html';
+        return null;
+    }
+    const usuario = JSON.parse(usuarioLogado);
+    if (usuario.tipo === 'admin') {
+        window.location.href = '../admin/dashboardAdmin.html';
+        return null;
+    }
+    return usuario;
+}
+
+function aplicarFotoPerfil(usuario) {
+    const fotoPerfil = usuario.foto_perfil || usuario.fotoPerfil || '';
+    const initials = usuario.nome ? usuario.nome.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase() : 'US';
+    const avatarIds = ['usuarioAvatar', 'avatarMobile'];
+
+    avatarIds.forEach(id => {
+        const element = document.getElementById(id);
+        if (!element) return;
+
+        if (fotoPerfil) {
+            element.style.backgroundImage = `url('${fotoPerfil}')`;
+            element.style.backgroundSize = 'cover';
+            element.style.backgroundPosition = 'center';
+            element.style.backgroundColor = '';
+            element.textContent = '';
         } else {
-            throw new Error('Erro ao carregar reclamações');
+            element.style.backgroundImage = '';
+            element.style.backgroundColor = '';
+            element.textContent = initials;
         }
+    });
+}
+
+async function buscarDenuncias() {
+    try {
+        const usuarioLogado = JSON.parse(sessionStorage.getItem('usuarioLogado') || '{}');
+        if (!usuarioLogado.id) return [];
+        const response = await fetch(`http://localhost:3000/api/denuncias?usuario_id=${usuarioLogado.id}`);
+        const data = await response.json();
+        denunciasData = Array.isArray(data) ? data : (data.data || []);
+        return denunciasData;
+    } catch (error) { console.error('Erro ao buscar denúncias:', error); return []; }
+}
+
+async function buscarReclamacoes() {
+    try {
+        const usuarioLogado = JSON.parse(sessionStorage.getItem('usuarioLogado') || '{}');
+        if (!usuarioLogado.id) return [];
+        const response = await fetch(`http://localhost:3000/api/reclamacoes?usuario_id=${usuarioLogado.id}`);
+        const data = await response.json();
+        reclamacoesData = Array.isArray(data) ? data : (data.data || []);
+        return reclamacoesData;
+    } catch (error) { console.error('Erro ao buscar reclamações:', error); return []; }
+}
+
+async function buscarUsuarios() {
+    try {
+        const response = await fetch('http://localhost:3000/api/usuarios');
+        const data = await response.json();
+        usuariosData = data.success ? data.data : (Array.isArray(data) ? data : []);
+        return usuariosData;
+    } catch (error) { console.error('Erro ao buscar usuários:', error); return []; }
+}
+
+async function verDetalhes(id, tipo) {
+    try {
+        let item = tipo === 'denuncia' ? denunciasData.find(d => d.id === id) : reclamacoesData.find(r => r.id === id);
+        
+        if (!item) { showToast('error', 'Item não encontrado'); return; }
+        
+        let usuarioInfo = null;
+        if (item.usuario_id) {
+            const usuario = usuariosData.find(u => u.id === item.usuario_id);
+            if (usuario) { usuarioInfo = { nome: usuario.nome, email: usuario.email, processo: usuario.numero_processo }; }
+        }
+        
+        const anexos = await buscarAnexos(tipo === 'denuncia' ? id : null, tipo === 'reclamacao' ? id : null);
+        
+        const dataFormatada = new Date(item.data_ocorrencia || item.createdAt).toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        
+        const detalhes = {
+            protocolo: item.protocolo || 'N/A',
+            titulo: item.titulo,
+            descricao: item.descricao,
+            data: dataFormatada,
+            local: item.local || 'Não informado',
+            status: item.status,
+            categoria: tipo === 'denuncia' ? (item.tipo || 'Não informada') : (item.categoria || 'Não informada'),
+            usuario: usuarioInfo ? usuarioInfo.nome : 'N/A',
+            email: usuarioInfo ? usuarioInfo.email : 'N/A'
+        };
+        
+        const tipoTexto = tipo === 'denuncia' ? 'Denúncia' : 'Reclamação';
+        showModalWithAttachments('detalhe', `${tipoTexto} - ${item.titulo.substring(0, 50)}`, `Visualizando detalhes da ${tipoTexto.toLowerCase()}`, detalhes, anexos);
     } catch (error) {
-        console.error('Erro ao carregar reclamações:', error);
-        reclamacoesUsuario = [];
-        showToast('error', 'Erro ao carregar reclamações');
+        console.error('Erro ao carregar detalhes:', error);
+        showToast('error', 'Não foi possível carregar os detalhes');
     }
 }
 
-function combinarAtividades() {
-    const denunciasFormatadas = denunciasUsuario.map(d => ({
-        ...d,
-        tipo_registro: 'denuncia',
-        data_registro: d.data_ocorrencia || d.createdAt,
-        status_display: d.status,
-        categoria: d.tipo
-    }));
-    
-    const reclamacoesFormatadas = reclamacoesUsuario.map(r => ({
-        ...r,
-        tipo_registro: 'reclamacao',
-        data_registro: r.data_ocorrencia || r.createdAt,
-        status_display: r.status,
-        categoria: r.categoria
-    }));
-    
-    todasAtividades = [...denunciasFormatadas, ...reclamacoesFormatadas];
-    todasAtividades.sort((a, b) => new Date(b.data_registro) - new Date(a.data_registro));
+function renderizarCardsEstatisticas() {
+    const totalAtividades = denunciasData.length + reclamacoesData.length;
+    const pendentes = denunciasData.filter(d => d.status === 'pendente').length + reclamacoesData.filter(r => r.status === 'aberta' || r.status === 'pendente').length;
+    const emAndamento = denunciasData.filter(d => d.status === 'em_andamento').length + reclamacoesData.filter(r => r.status === 'em_andamento').length;
+    const concluidas = denunciasData.filter(d => d.status === 'concluida').length + reclamacoesData.filter(r => r.status === 'resolvida' || r.status === 'concluida').length;
+    const atividadesMes = [...denunciasData, ...reclamacoesData].filter(item => new Date(item.createdAt).getTime() > Date.now() - 30 * 24 * 60 * 60 * 1000).length;
+
+    const totalDenunciasEl = document.getElementById('totalDenuncias');
+    const totalPendentesEl = document.getElementById('totalPendentes');
+    const totalProcessamentoEl = document.getElementById('totalProcessamento');
+    const totalConcluidasEl = document.getElementById('totalConcluidas');
+    const totalVariacaoEl = document.getElementById('totalVariacao');
+    const tabTotalEl = document.getElementById('tabTotal');
+    const tabPendentesEl = document.getElementById('tabPendentes');
+    const tabAndamentoEl = document.getElementById('tabAndamento');
+    const tabResolvidasEl = document.getElementById('tabResolvidas');
+    const statsRegistradasEl = document.getElementById('statsRegistradas');
+    const statsAguardandoEl = document.getElementById('statsAguardando');
+    const statsProcessandoEl = document.getElementById('statsProcessando');
+    const statsConcluidasEl = document.getElementById('statsConcluidas');
+
+    if (totalDenunciasEl) totalDenunciasEl.innerText = totalAtividades;
+    if (totalPendentesEl) totalPendentesEl.innerText = pendentes;
+    if (totalProcessamentoEl) totalProcessamentoEl.innerText = emAndamento;
+    if (totalConcluidasEl) totalConcluidasEl.innerText = concluidas;
+    if (totalVariacaoEl) totalVariacaoEl.innerText = `${atividadesMes > 0 ? '+' + atividadesMes : '0'} este mês`;
+    if (tabTotalEl) tabTotalEl.innerText = totalAtividades;
+    if (tabPendentesEl) tabPendentesEl.innerText = pendentes;
+    if (tabAndamentoEl) tabAndamentoEl.innerText = emAndamento;
+    if (tabResolvidasEl) tabResolvidasEl.innerText = concluidas;
+    if (statsRegistradasEl) statsRegistradasEl.innerText = totalAtividades;
+    if (statsAguardandoEl) statsAguardandoEl.innerText = pendentes;
+    if (statsProcessandoEl) statsProcessandoEl.innerText = emAndamento;
+    if (statsConcluidasEl) statsConcluidasEl.innerText = concluidas;
+
+    const badgeDenuncias = document.getElementById('denunciasCount');
+    const badgeReclamacoes = document.getElementById('reclamacoesCount');
+    if (badgeDenuncias) badgeDenuncias.innerText = denunciasData.length;
+    if (badgeReclamacoes) badgeReclamacoes.innerText = reclamacoesData.length;
 }
 
-// ============================================
-// FUNÇÕES DE ESTATÍSTICAS E GRÁFICOS DINÂMICOS
-// ============================================
 
-function calcularEstatisticasDinamicas() {
-    const totalDenuncias = denunciasUsuario.length;
-    const totalReclamacoes = reclamacoesUsuario.length;
-    const totalGeral = totalDenuncias + totalReclamacoes;
-    
-    // Status para denúncias
-    const pendentesDenuncias = denunciasUsuario.filter(d => d.status === 'pendente').length;
-    const andamentoDenuncias = denunciasUsuario.filter(d => d.status === 'em_andamento').length;
-    const concluidasDenuncias = denunciasUsuario.filter(d => d.status === 'concluida').length;
-    const arquivadasDenuncias = denunciasUsuario.filter(d => d.status === 'arquivada').length;
-    
-    // Status para reclamações
-    const pendentesReclamacoes = reclamacoesUsuario.filter(r => r.status === 'aberta').length;
-    const andamentoReclamacoes = reclamacoesUsuario.filter(r => r.status === 'em_andamento').length;
-    const resolvidasReclamacoes = reclamacoesUsuario.filter(r => r.status === 'resolvida').length;
-    const fechadasReclamacoes = reclamacoesUsuario.filter(r => r.status === 'fechada').length;
-    
-    const totalPendentes = pendentesDenuncias + pendentesReclamacoes;
-    const totalAndamento = andamentoDenuncias + andamentoReclamacoes;
-    const totalConcluidas = concluidasDenuncias + resolvidasReclamacoes;
-    const totalArquivadas = arquivadasDenuncias + fechadasReclamacoes;
-    
-    // Estatísticas de categorias
-    const categorias = {
-        denuncias: {},
-        reclamacoes: {}
-    };
-    
-    denunciasUsuario.forEach(d => {
-        const tipo = d.tipo || 'outro';
-        categorias.denuncias[tipo] = (categorias.denuncias[tipo] || 0) + 1;
-    });
-    
-    reclamacoesUsuario.forEach(r => {
-        const categoria = r.categoria || 'outro';
-        categorias.reclamacoes[categoria] = (categorias.reclamacoes[categoria] || 0) + 1;
-    });
-    
-    return {
-        totalDenuncias,
-        totalReclamacoes,
-        totalGeral,
-        totalPendentes,
-        totalAndamento,
-        totalConcluidas,
-        totalArquivadas,
-        categorias
-    };
-}
-
-function getUltimos7Dias() {
+function renderizarGrafico() {
     const dias = [];
-    for (let i = 6; i >= 0; i--) {
+    for (let i = 29; i >= 0; i--) {
         const data = new Date();
         data.setDate(data.getDate() - i);
-        dias.push({
-            data: data,
-            dataStr: data.toISOString().split('T')[0],
-            label: data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
-        });
+        dias.push(data.toISOString().split('T')[0]);
     }
-    return dias;
-}
-
-function calcularAtividadesPorDia() {
-    const ultimos7Dias = getUltimos7Dias();
     
-    return ultimos7Dias.map(dia => {
-        const atividadesDia = todasAtividades.filter(a => {
-            const dataAtividade = a.data_registro?.split('T')[0];
-            return dataAtividade === dia.dataStr;
-        });
-        
-        const denunciasDia = atividadesDia.filter(a => a.tipo_registro === 'denuncia').length;
-        const reclamacoesDia = atividadesDia.filter(a => a.tipo_registro === 'reclamacao').length;
-        
-        return {
-            data: dia.label,
-            total: atividadesDia.length,
-            denuncias: denunciasDia,
-            reclamacoes: reclamacoesDia,
-            dataCompleta: dia.data
-        };
+    const dadosDenuncias = new Array(30).fill(0);
+    const dadosReclamacoes = new Array(30).fill(0);
+    
+    denunciasData.forEach(denuncia => {
+        const dataDenuncia = new Date(denuncia.createdAt).toISOString().split('T')[0];
+        const index = dias.indexOf(dataDenuncia);
+        if (index !== -1) dadosDenuncias[index]++;
+    });
+    
+    reclamacoesData.forEach(reclamacao => {
+        const dataReclamacao = new Date(reclamacao.createdAt).toISOString().split('T')[0];
+        const index = dias.indexOf(dataReclamacao);
+        if (index !== -1) dadosReclamacoes[index]++;
+    });
+    
+    const labels = dias.map(d => {
+        const data = new Date(d);
+        return `${data.getDate()}/${data.getMonth() + 1}`;
+    });
+    
+    const ctx = document.getElementById('barChart').getContext('2d');
+    if (barChart) barChart.destroy();
+    
+    barChart = new Chart(ctx, { 
+        type: 'bar', 
+        data: { 
+            labels: labels, 
+            datasets: [
+                { label: 'Denúncias', data: dadosDenuncias, backgroundColor: 'rgba(249, 115, 22, 0.7)', borderColor: 'rgba(249, 115, 22, 1)', borderWidth: 1, borderRadius: 6 },
+                { label: 'Reclamações', data: dadosReclamacoes, backgroundColor: 'rgba(234, 179, 8, 0.7)', borderColor: 'rgba(234, 179, 8, 1)', borderWidth: 1, borderRadius: 6 }
+            ] 
+        }, 
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            plugins: { 
+                legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 10 } }, 
+                tooltip: { backgroundColor: 'rgba(0,0,0,0.8)', titleColor: '#f97316', bodyColor: '#fff', cornerRadius: 8 } 
+            }, 
+            scales: { 
+                y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(0, 0, 0, 0.05)' } }, 
+                x: { grid: { display: false }, ticks: { maxRotation: 45, minRotation: 45 } } 
+            } 
+        } 
     });
 }
 
-// ============================================
-// ATUALIZAÇÃO DOS GRÁFICOS
-// ============================================
+function renderizarGraficoPizza() {
+    const statusMap = new Map();
+    [...denunciasData, ...reclamacoesData].forEach(item => {
+        const status = item.status || 'Não informado';
+        statusMap.set(status, (statusMap.get(status) || 0) + 1);
+    });
 
-function atualizarGraficos() {
-    const stats = calcularEstatisticasDinamicas();
-    const atividadesPorDia = calcularAtividadesPorDia();
-    
-    // Atualizar gráfico de barras (atividades por dia)
-    if (barChart) {
-        const labels = atividadesPorDia.map(d => d.data);
-        const dadosTotais = atividadesPorDia.map(d => d.total);
-        
-        const coresLaranja = [
-            'rgba(255, 237, 213, 0.8)',
-            'rgba(254, 215, 170, 0.8)',
-            'rgba(251, 191, 36, 0.8)',
-            'rgba(249, 115, 22, 0.8)',
-            'rgba(234, 88, 12, 0.8)',
-            'rgba(194, 65, 12, 0.8)',
-            'rgba(154, 52, 18, 0.8)'
-        ];
-        
-        barChart.data.labels = labels;
-        barChart.data.datasets[0].data = dadosTotais;
-        barChart.data.datasets[0].backgroundColor = coresLaranja.slice(0, dadosTotais.length);
-        barChart.data.datasets[0].borderColor = 'rgba(249, 115, 22, 1)';
-        barChart.update();
-    }
-    
-    // Atualizar gráfico de pizza (status)
-    if (pieChart) {
-        const dadosPizza = [stats.totalPendentes, stats.totalAndamento, stats.totalConcluidas];
-        const labelsPizza = ['Pendentes', 'Em Análise', 'Resolvidas'];
-        const coresPizza = [
-            'rgba(251, 191, 36, 0.85)',
-            'rgba(249, 115, 22, 0.85)',
-            'rgba(194, 65, 12, 0.85)'
-        ];
-        
-        pieChart.data.labels = labelsPizza;
-        pieChart.data.datasets[0].data = dadosPizza;
-        pieChart.data.datasets[0].backgroundColor = coresPizza;
-        pieChart.update();
-        
-        // Atualizar legenda
-        const total = stats.totalPendentes + stats.totalAndamento + stats.totalConcluidas;
-        const legendHtml = labelsPizza.map((label, index) => {
-            const valor = dadosPizza[index];
-            const percentual = total > 0 ? Math.round((valor / total) * 100) : 0;
-            return `<div class="flex items-center justify-between py-1">
-                        <div class="flex items-center">
-                            <span class="w-3 h-3 rounded-full mr-2" style="background-color: ${coresPizza[index]}"></span>
-                            <span class="text-xs text-gray-600">${label}</span>
-                        </div>
-                        <span class="text-xs font-semibold text-gray-800">${valor} (${percentual}%)</span>
-                    </div>`;
-        }).join('');
-        
-        const pieLegend = document.getElementById('pieLegend');
-        if (pieLegend) pieLegend.innerHTML = legendHtml;
-    }
-}
+    const labels = Array.from(statusMap.keys());
+    const values = Array.from(statusMap.values());
+    const colors = ['#f97316', '#facc15', '#3b82f6', '#22c55e', '#6b7280', '#8b5cf6'];
 
-function atualizarCardsEstatisticas() {
-    const stats = calcularEstatisticasDinamicas();
-    
-    // Atualizar cards principais
-    const totalRegistros = document.getElementById('totalRegistros');
-    const totalPendentes = document.getElementById('totalPendentes');
-    const totalAndamento = document.getElementById('totalAndamento');
-    const totalConcluidas = document.getElementById('totalConcluidas');
-    
-    if (totalRegistros) totalRegistros.textContent = stats.totalGeral;
-    if (totalPendentes) totalPendentes.textContent = stats.totalPendentes;
-    if (totalAndamento) totalAndamento.textContent = stats.totalAndamento;
-    if (totalConcluidas) totalConcluidas.textContent = stats.totalConcluidas;
-    
-    // Atualizar tabs
-    const tabTotal = document.getElementById('tabTotal');
-    const tabPendentes = document.getElementById('tabPendentes');
-    const tabAndamento = document.getElementById('tabAndamento');
-    const tabResolvidas = document.getElementById('tabResolvidas');
-    
-    if (tabTotal) tabTotal.textContent = stats.totalGeral;
-    if (tabPendentes) tabPendentes.textContent = stats.totalPendentes;
-    if (tabAndamento) tabAndamento.textContent = stats.totalAndamento;
-    if (tabResolvidas) tabResolvidas.textContent = stats.totalConcluidas;
-    
-    // Atualizar notification badge
-    const notificationBadge = document.getElementById('notificationBadge');
-    if (notificationBadge) {
-        if (stats.totalPendentes > 0) {
-            notificationBadge.textContent = stats.totalPendentes;
-            notificationBadge.classList.remove('hidden');
-        } else {
-            notificationBadge.classList.add('hidden');
+    const ctx = document.getElementById('pieChart').getContext('2d');
+    if (pieChart) pieChart.destroy();
+
+    pieChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: values,
+                backgroundColor: colors.slice(0, labels.length),
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '60%',
+            plugins: {
+                legend: { display: false },
+                tooltip: { backgroundColor: 'rgba(0,0,0,0.8)', titleColor: '#fff', bodyColor: '#fff', cornerRadius: 6 }
+            }
         }
-    }
-    
-    // Atualizar contadores do menu lateral
-    const reclamacoesCount = document.getElementById('reclamacoesCount');
-    const denunciasCount = document.getElementById('denunciasCount');
-    
-    if (reclamacoesCount) reclamacoesCount.textContent = stats.totalReclamacoes;
-    if (denunciasCount) denunciasCount.textContent = stats.totalDenuncias;
+    });
+
+    const legendContainer = document.getElementById('pieLegend');
+    if (!legendContainer) return;
+
+    legendContainer.innerHTML = labels.map((label, index) => {
+        const count = values[index] || 0;
+        return `
+            <div class="flex items-center gap-2 p-2 rounded-lg bg-gray-50 border border-gray-100 shadow-sm">
+                <span class="w-3 h-3 rounded-full" style="background:${colors[index]};"></span>
+                <span class="text-xs text-gray-600 font-semibold">${translateStatus(label)}: ${count}</span>
+            </div>
+        `;
+    }).join('');
 }
 
-function atualizarTabelaAtividades() {
-    const tbody = document.getElementById('tabelaAtividades');
-    
-    if (!tbody) return;
-    
-    if (todasAtividades.length === 0) {
-        tbody.innerHTML = `
+function renderizarAtividades() {
+    const todasAtividades = [...denunciasData.map(d => ({ ...d, tipo_item: 'denuncia', tipo_texto: 'Denúncia', categoria_exibicao: d.tipo || 'Não informada', icone: 'fa-exclamation-triangle', bgIcon: 'bg-orange-100 text-orange-600' })), ...reclamacoesData.map(r => ({ ...r, tipo_item: 'reclamacao', tipo_texto: 'Reclamação', categoria_exibicao: r.categoria || 'Não informada', icone: 'fa-flag', bgIcon: 'bg-yellow-100 text-yellow-600' }))];
+    todasAtividades.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const atividadesRecentes = todasAtividades.slice(0, 5);
+
+    const statusClasses = {
+        pendente: 'bg-yellow-100 text-yellow-700',
+        em_andamento: 'bg-blue-100 text-blue-700',
+        concluida: 'bg-green-100 text-green-700',
+        arquivada: 'bg-gray-100 text-gray-700',
+        aberta: 'bg-yellow-100 text-yellow-700',
+        resolvida: 'bg-green-100 text-green-700',
+        fechada: 'bg-gray-100 text-gray-700'
+    };
+
+    let atividadesHtml = '';
+    if (atividadesRecentes.length === 0) {
+        atividadesHtml = `
             <tr>
-                <td colspan="5" class="px-6 py-8 text-center text-gray-500">
-                    <i class="fas fa-inbox text-orange-500 text-4xl mb-3 block"></i>
-                    <p class="text-base">Nenhuma atividade encontrada</p>
-                    <a href="./novasubmissao.html" class="text-orange-600 hover:text-orange-800 text-sm font-medium mt-2 inline-block transition-colors">
-                        + Criar nova submissão
-                    </a>
+                <td colspan="5" class="text-center py-8 text-gray-500">
+                    <i class="fas fa-inbox text-2xl mb-3 block text-gray-300"></i>
+                    Nenhuma atividade recente
                 </td>
             </tr>
         `;
-        return;
-    }
-    
-    const ultimasAtividades = todasAtividades.slice(0, 10);
-    
-    tbody.innerHTML = ultimasAtividades.map(item => `
-        <tr class="hover:bg-orange-50 transition-colors cursor-pointer" onclick="verDetalhes('${item.tipo_registro}', ${item.id})">
-            <td class="px-6 py-4 whitespace-nowrap">
-                <div class="flex items-center space-x-2">
-                    <i class="fas ${item.tipo_registro === 'denuncia' ? 'fa-exclamation-triangle text-orange-500' : 'fa-flag text-orange-500'} text-lg"></i>
-                    <span class="text-sm font-semibold ${item.tipo_registro === 'denuncia' ? 'text-orange-600' : 'text-orange-600'}">
-                        ${item.tipo_registro === 'denuncia' ? 'Denúncia' : 'Reclamação'}
-                    </span>
-                </div>
-            </td>
-            <td class="px-6 py-4 text-sm font-medium text-gray-900 max-w-xs truncate">${escapeHtml(item.titulo)}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${formatDate(item.data_registro)}</td>
-            <td class="px-6 py-4 whitespace-nowrap">
-                <span class="px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(item.status_display)}">
-                    ${translateStatus(item.status_display)}
-                </span>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                <button class="text-orange-600 hover:text-orange-800 transition-colors">
-                    <i class="fas fa-eye mr-1"></i> Detalhes
-                </button>
-            </td>
-        </tr>
-    `).join('');
-}
-
-// ============================================
-// FUNÇÕES DE ATUALIZAÇÃO EM TEMPO REAL
-// ============================================
-
-async function atualizarDashboardCompleto() {
-    try {
-        // Mostrar loading nos cards
-        const cards = document.querySelectorAll('.stat-card-value');
-        cards.forEach(card => {
-            if (card && !card.classList.contains('loading')) {
-                card.style.opacity = '0.5';
-            }
-        });
-        
-        await Promise.all([carregarDenuncias(), carregarReclamacoes()]);
-        combinarAtividades();
-        
-        atualizarInterface();
-        atualizarCardsEstatisticas();
-        atualizarGraficos();
-        atualizarTabelaAtividades();
-        
-        // Restaurar opacidade
-        cards.forEach(card => {
-            card.style.opacity = '1';
-        });
-        
-        console.log('✅ Dashboard atualizado em:', new Date().toLocaleTimeString());
-    } catch (error) {
-        console.error('Erro ao atualizar dashboard:', error);
-        showToast('error', 'Erro ao atualizar dados');
-    }
-}
-
-function iniciarAtualizacaoPeriodica() {
-    if (intervaloAtualizacao) clearInterval(intervaloAtualizacao);
-    
-    // Atualizar a cada 30 segundos
-    intervaloAtualizacao = setInterval(() => {
-        atualizarDashboardCompleto();
-    }, 30000);
-}
-
-// ============================================
-// FUNÇÕES DE INTERFACE
-// ============================================
-
-function atualizarInterface() {
-    // Atualizar informações do usuário
-    const usuarioNome = document.getElementById('usuarioNome');
-    const usuarioProcesso = document.getElementById('usuarioProcesso');
-    const saudacaoNome = document.getElementById('saudacaoNome');
-    const nomeMobile = document.getElementById('nomeMobile');
-    const processoMobile = document.getElementById('processoMobile');
-    
-    if (usuarioNome) usuarioNome.textContent = usuarioLogado.nome;
-    if (usuarioProcesso) usuarioProcesso.textContent = `Processo: ${usuarioLogado.numero_processo}`;
-    if (saudacaoNome) saudacaoNome.textContent = usuarioLogado.nome.split(' ')[0];
-    if (nomeMobile) nomeMobile.textContent = usuarioLogado.nome;
-    if (processoMobile) processoMobile.textContent = `Processo: ${usuarioLogado.numero_processo}`;
-    
-    // Atualizar avatar
-    const initials = getInitials(usuarioLogado.nome);
-    const usuarioAvatar = document.getElementById('usuarioAvatar');
-    const avatarMobile = document.getElementById('avatarMobile');
-    
-    if (usuarioAvatar) usuarioAvatar.textContent = initials;
-    if (avatarMobile) avatarMobile.textContent = initials;
-}
-
-function verDetalhes(tipo, id) {
-    if (tipo === 'denuncia') {
-        const item = denunciasUsuario.find(d => d.id === id);
-        if (item) {
-            showModal('detalhe', ' Detalhes da Denúncia', '', {
-                protocolo: item.protocolo,
-                titulo: item.titulo,
-                descricao: item.descricao,
-                data: formatDate(item.data_ocorrencia),
-                local: item.local,
-                status: item.status,
-                categoria: item.tipo
-            });
-        } else {
-            showModal('error', 'Erro', 'Denúncia não encontrada');
-        }
     } else {
-        const item = reclamacoesUsuario.find(r => r.id === id);
-        if (item) {
-            showModal('detalhe', ' Detalhes da Reclamação', '', {
-                protocolo: item.protocolo,
-                titulo: item.titulo,
-                descricao: item.descricao,
-                data: formatDate(item.data_ocorrencia),
-                local: item.local,
-                status: item.status,
-                categoria: item.categoria
-            });
-        } else {
-            showModal('error', 'Erro', 'Reclamação não encontrada');
+        atividadesRecentes.forEach(item => {
+            const dataFormatada = new Date(item.createdAt).toLocaleDateString('pt-PT');
+            atividadesHtml += `
+                <tr class="hover:bg-gray-50 transition cursor-pointer" onclick="verDetalhes(${item.id}, '${item.tipo_item}')">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center gap-3">
+                            <span class="inline-flex items-center justify-center w-9 h-9 rounded-full ${item.bgIcon}">
+                                <i class="fas ${item.icone} text-sm"></i>
+                            </span>
+                            <span class="text-sm text-gray-700 font-medium">${item.tipo_texto}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-700">${escapeHtml(item.titulo)}</td>
+                    <td class="px-6 py-4 text-sm text-gray-500">${dataFormatada}</td>
+                    <td class="px-6 py-4">
+                        <span class="inline-flex px-3 py-1 text-xs font-semibold rounded-full ${statusClasses[item.status] || 'bg-gray-100 text-gray-700'}">
+                            ${translateStatus(item.status)}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <button type="button" onclick="event.stopPropagation(); verDetalhes(${item.id}, '${item.tipo_item}')" class="text-orange-600 hover:text-orange-800 text-sm font-semibold">
+                            Ver
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    const tabelaAtividades = document.getElementById('tabelaAtividades');
+    if (tabelaAtividades) tabelaAtividades.innerHTML = atividadesHtml;
+}
+
+async function carregarTabelaGeral() {
+    await buscarDenuncias();
+    await buscarReclamacoes();
+    
+    const statusCores = { 
+        pendente: 'bg-yellow-50 text-yellow-700 border-yellow-300', 
+        em_andamento: 'bg-blue-50 text-blue-700 border-blue-300', 
+        concluida: 'bg-green-50 text-green-700 border-green-300', 
+        arquivada: 'bg-gray-50 text-gray-700 border-gray-300', 
+        aberta: 'bg-yellow-50 text-yellow-700 border-yellow-300', 
+        resolvida: 'bg-green-50 text-green-700 border-green-300', 
+        fechada: 'bg-gray-50 text-gray-700 border-gray-300' 
+    };
+    
+    const todosItens = [
+        ...denunciasData.map(d => ({ ...d, tipo_item: 'denuncia', tipo_texto: 'Denúncia', categoria_exibicao: d.tipo || 'Não informada', icone: 'fa-exclamation-triangle text-orange-500', bgIcon: 'bg-orange-100' })),
+        ...reclamacoesData.map(r => ({ ...r, tipo_item: 'reclamacao', tipo_texto: 'Reclamação', categoria_exibicao: r.categoria || 'Não informada', icone: 'fa-flag text-yellow-500', bgIcon: 'bg-yellow-100' }))
+    ];
+    todosItens.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    
+    let tabelaHtml = '';
+    if (todosItens.length === 0) {
+        tabelaHtml = `<tr><td colspan="6" class="text-center py-8 text-gray-500"><i class="fas fa-inbox text-4xl mb-3 block text-gray-300"></i>Nenhuma denúncia ou reclamação encontrada</td></tr>`;
+    } else {
+        todosItens.forEach(item => {
+            const dataFormatada = new Date(item.createdAt).toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const cor = statusCores[item.status] || statusCores.pendente;
+            
+            let opcoesStatus = '';
+            if (item.tipo_item === 'denuncia') {
+                opcoesStatus = `
+                    <option value="pendente" ${item.status === 'pendente' ? 'selected' : ''}>📋 Pendente</option>
+                    <option value="em_andamento" ${item.status === 'em_andamento' ? 'selected' : ''}>⚙️ Em Andamento</option>
+                    <option value="concluida" ${item.status === 'concluida' ? 'selected' : ''}>✅ Concluída</option>
+                    <option value="arquivada" ${item.status === 'arquivada' ? 'selected' : ''}>📦 Arquivada</option>
+                `;
+            } else {
+                opcoesStatus = `
+                    <option value="aberta" ${item.status === 'aberta' ? 'selected' : ''}>📋 Aberta</option>
+                    <option value="em_andamento" ${item.status === 'em_andamento' ? 'selected' : ''}>⚙️ Em Andamento</option>
+                    <option value="resolvida" ${item.status === 'resolvida' ? 'selected' : ''}>✅ Resolvida</option>
+                    <option value="fechada" ${item.status === 'fechada' ? 'selected' : ''}>🔒 Fechada</option>
+                `;
+            }
+            
+            tabelaHtml += `
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 ${item.bgIcon} rounded-full flex items-center justify-center">
+                                <i class="fas ${item.icone} text-sm"></i>
+                            </div>
+                            <span class="text-sm font-medium text-gray-900 max-w-xs truncate" title="${item.titulo.replace(/"/g, '&quot;')}">
+                                ${item.titulo.length > 50 ? item.titulo.substring(0, 50) + '...' : item.titulo}
+                            </span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="text-sm font-semibold ${item.tipo_item === 'denuncia' ? 'text-orange-600' : 'text-yellow-600'}">${item.tipo_texto}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="text-sm text-gray-600">${item.categoria_exibicao}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="text-sm text-gray-500">${dataFormatada}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <select onchange="atualizarStatus(${item.id}, '${item.tipo_item === 'denuncia' ? 'denuncias' : 'reclamacoes'}', this.value, event)" 
+                                class="text-xs border rounded-lg px-2 py-1 ${cor} focus:outline-none focus:ring-2 focus:ring-orange-500" 
+                                onclick="event.stopPropagation()">
+                            ${opcoesStatus}
+                        </select>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <button onclick="verDetalhes(${item.id}, '${item.tipo_item}')" 
+                                class="text-blue-600 hover:text-blue-800 transition p-2 hover:bg-blue-50 rounded-lg" 
+                                title="Ver detalhes">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+    const tabelaGestao = document.getElementById('tabelaGestao');
+    if (tabelaGestao) tabelaGestao.innerHTML = tabelaHtml;
+}
+
+async function atualizarStatus(id, tipo, status, evento) {
+    if (evento) evento.stopPropagation();
+    try {
+        const url = `http://localhost:3000/api/${tipo}/${id}/status`;
+        const response = await fetch(url, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: status }) });
+        if (response.ok) { 
+            showToast('success', `Status atualizado com sucesso!`); 
+            await carregarTabelaGeral(); 
+            await renderizarCardsEstatisticas(); 
+            await renderizarAtividades(); 
+            await renderizarNotificacoes(); 
+        } else { 
+            showToast('error', 'Erro ao atualizar status'); 
         }
+    } catch (error) { 
+        console.error('Erro:', error); 
+        showToast('error', 'Erro ao conectar ao servidor'); 
     }
 }
 
-function filtrarPorStatus(status) {
-    const tbody = document.getElementById('tabelaAtividades');
-    let filtradas = [...todasAtividades];
+function renderizarCardsFuncionalidades() {
+    const totalDenuncias = denunciasData.length;
+    const totalReclamacoes = reclamacoesData.length;
+    const cardsHtml = `
+        <div class="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition border-t-4 border-indigo-500">
+            <div class="flex items-center justify-between mb-4">
+                <div class="bg-indigo-100 p-3 rounded-lg"><i class="fas fa-users text-indigo-600 text-xl"></i></div>
+                <span class="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">+${usuariosData.filter(u => new Date(u.createdAt).getTime() > Date.now() - 30 * 24 * 60 * 60 * 1000).length} novo</span>
+            </div>
+            <h3 class="text-lg font-bold text-gray-800 mb-1">Gestão de Usuários</h3>
+            <p class="text-sm text-gray-500 mb-4">${usuariosData.length} usuários registrados</p>
+            <div class="flex justify-between items-center">
+                <span class="text-xs text-gray-400">Administradores: ${usuariosData.filter(u => u.tipo === 'admin').length}</span>
+                <a href="usuarios.html" class="text-indigo-600 text-sm font-medium hover:text-indigo-800">Gerenciar <i class="fas fa-arrow-right ml-1"></i></a>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition border-t-4 border-purple-500">
+            <div class="flex items-center justify-between mb-4">
+                <div class="bg-purple-100 p-3 rounded-lg"><i class="fas fa-cog text-purple-600 text-xl"></i></div>
+            </div>
+            <h3 class="text-lg font-bold text-gray-800 mb-1">Configurações do Sistema</h3>
+            <p class="text-sm text-gray-500 mb-4">Parâmetros gerais, categorias e permissões</p>
+            <div class="flex justify-end">
+                <a href="#" class="text-purple-600 text-sm font-medium hover:text-purple-800">Configurar <i class="fas fa-arrow-right ml-1"></i></a>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition border-t-4 border-green-500">
+            <div class="flex items-center justify-between mb-4">
+                <div class="bg-green-100 p-3 rounded-lg"><i class="fas fa-chart-pie text-green-600 text-xl"></i></div>
+            </div>
+            <h3 class="text-lg font-bold text-gray-800 mb-1">Visão Geral</h3>
+            <p class="text-sm text-gray-500 mb-4">Denúncias: ${totalDenuncias} | Reclamações: ${totalReclamacoes}</p>
+            <div class="flex justify-end">
+                <button onclick="document.getElementById('barChart').scrollIntoView({behavior: 'smooth'})" class="text-green-600 text-sm font-medium hover:text-green-800">Ver Gráficos <i class="fas fa-chart-line ml-1"></i></button>
+            </div>
+        </div>
+    `;
+    const cardsFuncionalidades = document.getElementById('cardsFuncionalidades');
+    if (cardsFuncionalidades) cardsFuncionalidades.innerHTML = cardsHtml;
+}
+
+function renderizarNotificacoes() {
+    const pendentesDenuncias = denunciasData.filter(d => d.status === 'pendente');
+    const pendentesReclamacoes = reclamacoesData.filter(r => r.status === 'aberta');
+    const totalPendentes = pendentesDenuncias.length + pendentesReclamacoes.length;
     
-    if (status === 'pendente') {
-        filtradas = todasAtividades.filter(a => a.status_display === 'pendente' || a.status_display === 'aberta');
-    } else if (status === 'em_andamento') {
-        filtradas = todasAtividades.filter(a => a.status_display === 'em_andamento');
-    } else if (status === 'concluida') {
-        filtradas = todasAtividades.filter(a => a.status_display === 'concluida' || a.status_display === 'resolvida');
+    const contador = document.getElementById('contadorNotificacoes');
+    if (contador) { 
+        if (totalPendentes > 0) { 
+            contador.innerText = totalPendentes > 9 ? '9+' : totalPendentes; 
+            contador.classList.remove('hidden'); 
+        } else { 
+            contador.classList.add('hidden'); 
+        } 
     }
     
-    if (filtradas.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="5" class="px-6 py-8 text-center text-gray-500">
-                    <i class="fas fa-search text-orange-500 text-4xl mb-3 block"></i>
-                    <p>Nenhuma atividade com este status</p>
-                </td>
-            </tr>
-        `;
-        return;
-    }
-    
-    tbody.innerHTML = filtradas.slice(0, 10).map(item => `
-        <tr class="hover:bg-orange-50 transition-colors cursor-pointer" onclick="verDetalhes('${item.tipo_registro}', ${item.id})">
-            <td class="px-6 py-4 whitespace-nowrap">
-                <div class="flex items-center space-x-2">
-                    <i class="fas ${item.tipo_registro === 'denuncia' ? 'fa-exclamation-triangle text-orange-500' : 'fa-flag text-orange-500'} text-lg"></i>
-                    <span class="text-sm font-semibold ${item.tipo_registro === 'denuncia' ? 'text-orange-600' : 'text-orange-600'}">
-                        ${item.tipo_registro === 'denuncia' ? 'Denúncia' : 'Reclamação'}
-                    </span>
+    let notificacoesHtml = '';
+    pendentesDenuncias.slice(0, 5).forEach(d => { 
+        notificacoesHtml += `
+            <div class="p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer" onclick="verDetalhes(${d.id}, 'denuncia')">
+                <div class="flex items-start space-x-3">
+                    <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center"><i class="fas fa-exclamation-triangle text-red-600 text-sm"></i></div>
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-gray-800">Nova Denúncia</p>
+                        <p class="text-xs text-gray-500">${d.titulo.substring(0, 40)}${d.titulo.length > 40 ? '...' : ''}</p>
+                        <p class="text-xs text-gray-400 mt-1">${new Date(d.createdAt).toLocaleDateString('pt-PT')}</p>
+                    </div>
                 </div>
-            </td>
-            <td class="px-6 py-4 text-sm font-medium text-gray-900 max-w-xs truncate">${escapeHtml(item.titulo)}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${formatDate(item.data_registro)}</td>
-            <td class="px-6 py-4 whitespace-nowrap">
-                <span class="px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(item.status_display)}">
-                    ${translateStatus(item.status_display)}
-                </span>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                <button class="text-orange-600 hover:text-orange-800 transition-colors">
-                    <i class="fas fa-eye mr-1"></i> Detalhes
-                </button>
-            </td>
-        </tr>
-    `).join('');
+            </div>
+        `; 
+    });
+    pendentesReclamacoes.slice(0, 5).forEach(r => { 
+        notificacoesHtml += `
+            <div class="p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer" onclick="verDetalhes(${r.id}, 'reclamacao')">
+                <div class="flex items-start space-x-3">
+                    <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center"><i class="fas fa-flag text-yellow-600 text-sm"></i></div>
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-gray-800">Nova Reclamação</p>
+                        <p class="text-xs text-gray-500">${r.titulo.substring(0, 40)}${r.titulo.length > 40 ? '...' : ''}</p>
+                        <p class="text-xs text-gray-400 mt-1">${new Date(r.createdAt).toLocaleDateString('pt-PT')}</p>
+                    </div>
+                </div>
+            </div>
+        `; 
+    });
+    if (notificacoesHtml === '') { 
+        notificacoesHtml = '<div class="p-4 text-center text-gray-500">Nenhuma notificação</div>'; 
+    }
+    const listaNotificacoes = document.getElementById('listaNotificacoes');
+    if (listaNotificacoes) listaNotificacoes.innerHTML = notificacoesHtml;
 }
 
-// ============================================
-// INICIALIZAÇÃO DOS GRÁFICOS
-// ============================================
-
-function initCharts() {
-    const barCtx = document.getElementById('barChart');
-    const pieCtx = document.getElementById('pieChart');
-    
-    if (barCtx) {
-        barChart = new Chart(barCtx.getContext('2d'), {
-            type: 'bar',
-            data: { 
-                labels: [], 
-                datasets: [{ 
-                    label: 'Atividades Registradas', 
-                    data: [], 
-                    backgroundColor: [],
-                    borderColor: 'rgba(249, 115, 22, 1)',
-                    borderWidth: 1,
-                    borderRadius: 8,
-                    barPercentage: 0.7,
-                    categoryPercentage: 0.8
-                }] 
-            },
-            options: { 
-                responsive: true, 
-                maintainAspectRatio: false, 
-                plugins: { 
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: 'rgba(0,0,0,0.8)',
-                        titleColor: '#f97316',
-                        bodyColor: '#fff',
-                        cornerRadius: 8
-                    }
-                }, 
-                scales: { 
-                    y: { 
-                        beginAtZero: true, 
-                        ticks: { stepSize: 1, color: '#6b7280' },
-                        grid: { color: '#e5e7eb' }
-                    }, 
-                    x: { 
-                        grid: { display: false },
-                        ticks: { color: '#6b7280', font: { size: 11 } }
-                    } 
-                } 
-            }
-        });
+function setupNotificacaoDropdown() {
+    const btn = document.getElementById('notificacaoBtn');
+    const dropdown = document.getElementById('notificacaoDropdown');
+    if (btn) { 
+        btn.addEventListener('click', (e) => { 
+            e.stopPropagation(); 
+            if (dropdown) dropdown.classList.toggle('hidden'); 
+            renderizarNotificacoes(); 
+        }); 
     }
-    
-    if (pieCtx) {
-        pieChart = new Chart(pieCtx.getContext('2d'), {
-            type: 'pie',
-            data: { 
-                labels: [], 
-                datasets: [{ 
-                    data: [], 
-                    backgroundColor: [],
-                    borderWidth: 3,
-                    hoverOffset: 15,
-                    cutout: '0%'
-                }] 
-            },
-            options: { 
-                responsive: true, 
-                maintainAspectRatio: false, 
-                plugins: { 
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: 'rgba(0,0,0,0.8)',
-                        titleColor: '#f97316',
-                        bodyColor: '#fff',
-                        cornerRadius: 8,
-                        callbacks: {
-                            label: function(context) {
-                                const label = context.label || '';
-                                const value = context.raw || 0;
-                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                const percent = total > 0 ? Math.round((value / total) * 100) : 0;
-                                return `${label}: ${value} (${percent}%)`;
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    }
-}
-
-function initTabs() {
-    const botoes = document.querySelectorAll('.filter-btn');
-    const statusMap = ['todos', 'pendente', 'em_andamento', 'concluida'];
-    
-    botoes.forEach((btn, idx) => {
-        btn.addEventListener('click', function() {
-            botoes.forEach(b => { 
-                b.classList.remove('bg-orange-500', 'text-white'); 
-                b.classList.add('bg-gray-100', 'text-gray-700');
-            });
-            this.classList.remove('bg-gray-100', 'text-gray-700'); 
-            this.classList.add('bg-orange-500', 'text-white');
-            if (statusMap[idx] === 'todos') atualizarTabelaAtividades();
-            else filtrarPorStatus(statusMap[idx]);
-        });
+    document.addEventListener('click', () => { 
+        if (dropdown) dropdown.classList.add('hidden'); 
     });
 }
-
-// ============================================
-// LOGOUT
-// ============================================
 
 function logout() {
     const existingModal = document.getElementById('logoutConfirmModal');
@@ -831,20 +772,6 @@ function logout() {
     const modal = document.createElement('div');
     modal.id = 'logoutConfirmModal';
     modal.className = 'fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 backdrop-blur-sm';
-    modal.style.animation = 'fadeIn 0.3s ease';
-    
-    if (!document.getElementById('logoutStyles')) {
-        const style = document.createElement('style');
-        style.id = 'logoutStyles';
-        style.textContent = `
-            @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-            @keyframes slideIn { from { transform: translateY(-50px) scale(0.9); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
-            @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-            .modal-slide-in { animation: slideIn 0.3s ease; }
-            .toast-slide-in { animation: slideInRight 0.3s ease; }
-        `;
-        document.head.appendChild(style);
-    }
     
     modal.innerHTML = `
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden modal-slide-in">
@@ -874,51 +801,69 @@ function logout() {
     
     document.body.appendChild(modal);
     
-    const closeModal = () => {
-        modal.style.opacity = '0';
-        setTimeout(() => modal.remove(), 300);
+    const closeModal = () => { 
+        modal.style.opacity = '0'; 
+        setTimeout(() => modal.remove(), 300); 
     };
     
-    document.getElementById('logoutConfirmBtn')?.addEventListener('click', () => {
-        closeModal();
-        const toast = document.createElement('div');
-        toast.className = 'fixed top-20 right-4 px-6 py-3 rounded-lg shadow-lg z-50 bg-green-500 text-white toast-slide-in';
-        toast.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Sessão encerrada com sucesso!';
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 1500);
-        setTimeout(() => {
-            sessionStorage.removeItem('usuarioLogado');
-            sessionStorage.removeItem('token');
-            window.location.href = '../login.html';
-        }, 500);
+    document.getElementById('logoutConfirmBtn')?.addEventListener('click', () => { 
+        closeModal(); 
+        const toast = document.createElement('div'); 
+        toast.className = 'fixed top-20 right-4 px-6 py-3 rounded-lg shadow-lg z-50 bg-green-500 text-white toast-slide-in'; 
+        toast.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Sessão encerrada com sucesso!'; 
+        document.body.appendChild(toast); 
+        setTimeout(() => toast.remove(), 1500); 
+        setTimeout(() => { 
+            sessionStorage.removeItem('usuarioLogado'); 
+            sessionStorage.removeItem('token'); 
+            window.location.href = '../login.html'; 
+        }, 500); 
     });
     
     document.getElementById('logoutCancelBtn')?.addEventListener('click', closeModal);
     modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 }
 
-// ============================================
-// INICIALIZAÇÃO PRINCIPAL
-// ============================================
+let intervaloAtualizacao = null;
+function iniciarAtualizacaoPeriodica() {
+    if (intervaloAtualizacao) clearInterval(intervaloAtualizacao);
+    intervaloAtualizacao = setInterval(async () => { 
+        await buscarDenuncias(); 
+        await buscarReclamacoes(); 
+        renderizarCardsEstatisticas(); 
+        renderizarGrafico(); 
+        renderizarGraficoPizza(); 
+        renderizarAtividades(); 
+        await carregarTabelaGeral(); 
+        renderizarNotificacoes(); 
+        console.log('🔄 Dashboard atualizado automaticamente'); 
+    }, 30000);
+}
 
-document.addEventListener('DOMContentLoaded', async function() {
-    usuarioLogado = checkAuth();
-    if (!usuarioLogado) return;
-    
-    initCharts();
-    initTabs();
-    
-    await atualizarDashboardCompleto();
+async function init() {
+    const usuario = verificarUsuario();
+    if (!usuario) return;
+    const usuarioNomeElement = document.getElementById('usuarioNome');
+    const usuarioProcessoElement = document.getElementById('usuarioProcesso');
+    const usuarioAvatar = document.getElementById('usuarioAvatar');
+
+    if (usuarioNomeElement) usuarioNomeElement.innerText = usuario.nome;
+    if (usuarioProcessoElement) usuarioProcessoElement.innerText = `Processo: ${usuario.numero_processo || 'N/A'}`;
+    const nomeMobile = document.getElementById('nomeMobile');
+    const processoMobile = document.getElementById('processoMobile');
+    if (nomeMobile) nomeMobile.innerText = usuario.nome;
+    if (processoMobile) processoMobile.innerText = `Processo: ${usuario.numero_processo || 'N/A'}`;
+    aplicarFotoPerfil(usuario);
+
+    await Promise.all([buscarDenuncias(), buscarReclamacoes()]);
+    renderizarCardsEstatisticas();
+    renderizarGrafico();
+    renderizarGraficoPizza();
+    renderizarAtividades();
+    renderizarNotificacoes();
+    setupNotificacaoDropdown();
     iniciarAtualizacaoPeriodica();
-    
-    showToast('success', `Bem-vindo, ${usuarioLogado.nome.split(' ')[0]}!`);
-    console.log('✅ Dashboard inicializado com sucesso');
-});
+    console.log('✅ Dashboard inicializado com sucesso!');
+}
 
-// ============================================
-// EXPORTAR FUNÇÕES GLOBAIS
-// ============================================
-
-window.logout = logout;
-window.verDetalhes = verDetalhes;
-window.filtrarPorStatus = filtrarPorStatus;
+document.addEventListener('DOMContentLoaded', init);

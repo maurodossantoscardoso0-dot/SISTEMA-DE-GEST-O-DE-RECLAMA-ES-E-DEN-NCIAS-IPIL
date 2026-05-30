@@ -18,11 +18,12 @@
         .status-badge:hover { transform: scale(1.05); }
         .fade-out { animation: fadeOut 0.5s ease-out; }
         @keyframes fadeOut { 0% { opacity: 1; } 100% { opacity: 0; } }
+        .anexo-item { transition: all 0.3s ease; }
+        .anexo-item:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body class="bg-gray-50">
 
-   
     <!-- Navbar superior -->
     <nav class="bg-white shadow-lg border-b border-gray-200 fixed w-full z-50 top-0">
         <div class="container mx-auto px-4">
@@ -58,7 +59,6 @@
         </div>
     </nav>
 
-    
     <!-- Layout principal -->
     <div class="flex pt-16">
         
@@ -105,7 +105,7 @@
                         <span>Meu Perfil</span>
                     </a>
                     
-                    <a href="#" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl transition">
+                    <a href="configuracoes.html" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl transition">
                         <i class="fas fa-cog"></i>
                         <span>Configurações</span>
                     </a>
@@ -124,7 +124,7 @@
                 
                 <!-- Breadcrumb -->
                 <div class="flex items-center text-sm text-gray-500 mb-6">
-                    <a href="dashboard.html" class="hover:text-orange-600">Admin</a>
+                    <a href="dashboardAdmin.html" class="hover:text-orange-600">Admin</a>
                     <i class="fas fa-chevron-right mx-2 text-xs"></i>
                     <span class="text-orange-600 font-medium">Denúncias</span>
                 </div>
@@ -193,8 +193,40 @@
         </div>
     </div>
 
+    <!-- Modal para visualizar anexos -->
+    <div id="anexosModal" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden items-center justify-center p-4" style="display: none;">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div class="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-4 flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-paperclip text-white text-xl"></i>
+                    <h3 class="text-xl font-bold text-white">Anexos da Denúncia</h3>
+                </div>
+                <button onclick="fecharModalAnexos()" class="text-white hover:text-gray-200 transition">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div id="anexosList" class="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+                <!-- Lista de anexos será inserida aqui -->
+            </div>
+            <div class="px-6 py-4 bg-gray-50 flex justify-end">
+                <button onclick="fecharModalAnexos()" class="px-5 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                    <i class="fas fa-times mr-2"></i>Fechar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para visualizar imagem em tamanho real -->
+    <div id="imageModal" class="fixed inset-0 bg-black bg-opacity-90 z-50 hidden items-center justify-center" style="display: none;">
+        <div class="relative max-w-5xl w-full mx-4">
+            <button onclick="fecharImageModal()" class="absolute -top-10 right-0 text-white hover:text-gray-300 transition text-2xl">
+                <i class="fas fa-times"></i>
+            </button>
+            <img id="imageModalContent" src="" alt="Imagem ampliada" class="w-full h-auto rounded-lg shadow-2xl">
+        </div>
+    </div>
+
     <!-- Scripts -->
-    
     <script src="denunciasadmin.js"></script>
 </body>
 </html>

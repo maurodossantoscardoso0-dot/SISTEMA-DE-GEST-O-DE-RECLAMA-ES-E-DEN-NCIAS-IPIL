@@ -31,6 +31,15 @@
             0%, 100% { opacity: 1; }
             50% { opacity: .5; }
         }
+        /* Estilo para o item ativo do menu */
+        .menu-active {
+            background: linear-gradient(to right, #fff7ed, #ffedd5);
+            color: #ea580c;
+            border-left: 4px solid #f97316;
+        }
+        .menu-active i {
+            color: #f97316;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -44,14 +53,14 @@
                         IPIL
                     </div>
                     <div class="hidden md:block">
-                        <span class="text-gray-700 font-semibold">Sistema de Reclamações e Denúncias</span>
+                        <span class="text-gray-700 font-semibold">Painel do Administrador</span>
                     </div>
                 </div>
 
                 <div class="flex items-center space-x-4">
                     <button class="relative text-gray-600 hover:text-orange-600 transition">
                         <i class="fas fa-bell text-xl"></i>
-                        <span id="notificationBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center hidden">0</span>
+                        <span id="notificationBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
                     </button>
                     
                     <div class="flex items-center space-x-3">
@@ -63,7 +72,7 @@
                             </p>
                         </div>
                         <div id="usuarioAvatar" class="w-10 h-10 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-white font-bold">
-                            JS
+                            AD
                         </div>
                     </div>
                 </div>
@@ -72,51 +81,39 @@
     </nav>
 
     <div class="flex pt-16">
-        <aside class="w-64 bg-white shadow-lg h-screen fixed hidden lg:block overflow-y-auto">
+        <!-- MENU LATERAL CORRIGIDO -->
+        <aside class="w-64 bg-white shadow-lg h-screen fixed lg:block overflow-y-auto hidden">
             <div class="p-6">
-                <div class="flex items-center space-x-3 mb-8 pb-6 border-b border-gray-200 lg:hidden">
-                    <div id="avatarMobile" class="w-12 h-12 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                        JS
-                    </div>
-                    <div>
-                        <p id="nomeMobile" class="font-semibold text-gray-800">Carregando...</p>
-                        <p id="processoMobile" class="text-xs text-gray-500">
-                            <i class="fas fa-hashtag text-orange-500 mr-1 text-xs"></i>
-                            Processo: <span id="processoNumeroMobile">---</span>
-                        </p>
-                    </div>
-                </div>
+               
 
-                 <aside class="w-64 bg-white shadow-lg h-screen fixed hidden lg:block overflow-y-auto">
-            <div class="p-6">
                 <div class="space-y-2">
                     <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Menu Admin</p>
                     
-                    <a href="dashboardAdmin.html" class="flex items-center space-x-3 px-4 py-3 bg-gradient-to-r from-orange-50 to-orange-100 text-orange-700 rounded-xl font-medium nav-link border-l-4 border-orange-600">
-                        <i class="fas fa-tachometer-alt"></i>
+                    <a href="dashboardAdmin.html" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-orange-50 hover:text-orange-700 rounded-xl transition nav-link">
+                        <i class="fas fa-tachometer-alt w-5"></i>
                         <span>Dashboard</span>
                     </a>
                     
                     <a href="denunciasadmin.html" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-orange-50 hover:text-orange-700 rounded-xl transition nav-link">
-                        <i class="fas fa-exclamation-triangle"></i>
+                        <i class="fas fa-exclamation-triangle w-5"></i>
                         <span>Denúncias</span>
                         <span id="badgeDenuncias" class="ml-auto bg-red-100 text-red-600 text-xs px-2 py-1 rounded-full">0</span>
                     </a>
                     
                     <a href="reclamacoesadmin.html" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-orange-50 hover:text-orange-700 rounded-xl transition nav-link">
-                        <i class="fas fa-flag"></i>
+                        <i class="fas fa-flag w-5"></i>
                         <span>Reclamações</span>
                         <span id="badgeReclamacoes" class="ml-auto bg-yellow-100 text-yellow-600 text-xs px-2 py-1 rounded-full">0</span>
                     </a>
                     
                     <a href="usuarios.html" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-orange-50 hover:text-orange-700 rounded-xl transition nav-link">
-                        <i class="fas fa-users"></i>
+                        <i class="fas fa-users w-5"></i>
                         <span>Usuários</span>
                         <span id="badgeUsuarios" class="ml-auto bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">0</span>
                     </a>
                     
                     <a href="relatorioadmin.html" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-orange-50 hover:text-orange-700 rounded-xl transition nav-link">
-                        <i class="fas fa-chart-line"></i>
+                        <i class="fas fa-chart-line w-5"></i>
                         <span>Relatórios</span>
                     </a>
                 </div>
@@ -124,28 +121,27 @@
                 <div class="mt-12 pt-6 border-t border-gray-200">
                     <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Configurações</p>
                     
-                    <a href="perfil.html" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl transition">
-                        <i class="fas fa-user"></i>
+                    <a href="perfil.html" class="flex items-center space-x-3 px-4 py-3 rounded-xl transition nav-link menu-active">
+                        <i class="fas fa-user w-5"></i>
                         <span>Meu Perfil</span>
                     </a>
                     
-                    <a href="#" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl transition">
-                        <i class="fas fa-cog"></i>
+                    <a href="configuracoes.html" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl transition">
+                        <i class="fas fa-cog w-5"></i>
                         <span>Configurações</span>
                     </a>
                     
                     <a href="#" onclick="logout()" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-red-50 hover:text-red-600 rounded-xl transition">
-                        <i class="fas fa-sign-out-alt"></i>
+                        <i class="fas fa-sign-out-alt w-5"></i>
                         <span>Sair</span>
                     </a>
                 </div>
             </div>
         </aside>
 
-        </aside>
-
+        <!-- Menu mobile -->
         <div class="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
-            <div class="grid grid-cols-4 gap-1 p-2">
+            <div class="grid grid-cols-5 gap-1 p-2">
                 <a href="dashboardAdmin.html" class="flex flex-col items-center py-2 px-1 text-gray-500 hover:text-orange-600 transition">
                     <i class="fas fa-tachometer-alt text-lg"></i>
                     <span class="text-xs mt-1">Dashboard</span>
@@ -158,18 +154,23 @@
                     <i class="fas fa-exclamation-triangle text-lg"></i>
                     <span class="text-xs mt-1">Denúncias</span>
                 </a>
-                <a href="#" class="flex flex-col items-center py-2 px-1 text-orange-600 bg-orange-50 rounded-lg">
+                <a href="usuarios.html" class="flex flex-col items-center py-2 px-1 text-gray-500 hover:text-orange-600 transition">
+                    <i class="fas fa-users text-lg"></i>
+                    <span class="text-xs mt-1">Usuários</span>
+                </a>
+                <a href="perfil.html" class="flex flex-col items-center py-2 px-1 text-orange-600 bg-orange-50 rounded-lg">
                     <i class="fas fa-user text-lg"></i>
                     <span class="text-xs mt-1 font-medium">Perfil</span>
                 </a>
             </div>
         </div>
 
+        <!-- Conteúdo principal -->
         <div class="flex-1 lg:ml-64">
             <div class="container mx-auto px-4 py-8 pb-24 lg:pb-8">
                 
                 <div class="flex items-center text-sm text-gray-500 mb-6">
-                    <a href="#" class="hover:text-orange-600">Admin</a>
+                    <a href="dashboardAdmin.html" class="hover:text-orange-600">Admin</a>
                     <i class="fas fa-chevron-right mx-2 text-xs"></i>
                     <span class="text-orange-600 font-medium">Meu Perfil</span>
                 </div>
@@ -184,6 +185,7 @@
                     <p class="text-gray-600 ml-5">Gerencie suas informações pessoais</p>
                 </div>
 
+                <!-- Resto do conteúdo permanece igual -->
                 <div class="bg-white rounded-xl shadow-md overflow-hidden">
                     <div class="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-4">
                         <h2 class="text-xl font-bold text-white">Informações Pessoais</h2>
@@ -195,7 +197,7 @@
                                 <div class="text-center">
                                     <div class="relative inline-block">
                                         <div id="profileImage" class="w-40 h-40 mx-auto bg-gradient-to-r from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-white text-5xl font-bold shadow-lg">
-                                            JS
+                                            AD
                                         </div>
                                         
                                         <img id="profilePreview" src="#" alt="Preview" class="w-40 h-40 mx-auto rounded-full object-cover shadow-lg hidden">
@@ -430,11 +432,12 @@
                         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                             <div>
                                 <h3 class="font-semibold text-gray-800 mb-1">Excluir minha conta</h3>
-                                <p class="text-sm text-gray-600">Esta ação é irreversível. Todos os seus dados serão permanentemente removidos.</p>
+                                <p class="text-sm text-gray-600">⚠️ Esta ação é irreversível. Todos os seus dados serão permanentemente removidos.</p>
+                                <p class="text-xs text-red-500 mt-1">⛔ Contas de administrador NÃO podem ser excluídas por segurança.</p>
                             </div>
-                            <button onclick="confirmarExclusao()" class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium">
+                            <button onclick="confirmarExclusao()" class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium opacity-50 cursor-not-allowed" disabled>
                                 <i class="fas fa-trash mr-2"></i>
-                                Excluir minha conta
+                                Excluir minha conta (Bloqueado)
                             </button>
                         </div>
                     </div>

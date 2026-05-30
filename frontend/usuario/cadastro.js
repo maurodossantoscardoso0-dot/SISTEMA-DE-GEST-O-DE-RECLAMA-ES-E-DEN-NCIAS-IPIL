@@ -49,49 +49,49 @@ function validarCampo(input, tipo, warningIcon, errorMsg) {
 function validarFormulario(dados) {
     // Validar nome (apenas letras e espaços)
     if (!validarApenasLetrasEspacos(dados.nome)) {
-        alert('❌ Nome inválido! Use apenas letras e espaços.');
+        alert(' Nome inválido! Use apenas letras e espaços.');
         return false;
     }
     
     // Validar curso (não pode estar vazio)
     if (!dados.curso) {
-        alert('❌ Por favor, selecione um curso.');
+        alert(' Por favor, selecione um curso.');
         return false;
     }
     
     // Validar turma (apenas letras e números)
     if (!validarApenasLetrasNumeros(dados.turma)) {
-        alert('❌ Turma inválida! Use apenas letras e números.');
+        alert(' Turma inválida! Use apenas letras e números.');
         return false;
     }
     
     // Validar sala (apenas letras e números)
     if (!validarApenasLetrasNumeros(dados.sala)) {
-        alert('❌ Sala inválida! Use apenas letras e números.');
+        alert(' Sala inválida! Use apenas letras e números.');
         return false;
     }
     
     // Validar email
     if (!validarEmail(dados.email)) {
-        alert('❌ Email inválido! Digite um email válido (ex: usuario@dominio.com).');
+        alert(' Email inválido! Digite um email válido (ex: usuario@dominio.com).');
         return false;
     }
     
     // Validar telefone (9 dígitos)
     if (!validarTelefone(dados.telefone)) {
-        alert('❌ Telefone inválido! O telefone deve conter exatamente 9 dígitos numéricos.');
+        alert(' Telefone inválido! O telefone deve conter exatamente 9 dígitos numéricos.');
         return false;
     }
     
     // Validar senha (mínimo 6 caracteres)
     if (dados.senha.length < 6) {
-        alert('❌ Senha inválida! A senha deve ter no mínimo 6 caracteres.');
+        alert(' Senha inválida! A senha deve ter no mínimo 6 caracteres.');
         return false;
     }
     
     // Validar confirmação de senha
     if (dados.senha !== dados.confirmarSenha) {
-        alert('❌ As senhas não coincidem!');
+        alert(' As senhas não coincidem!');
         return false;
     }
     
@@ -127,11 +127,11 @@ async function cadastrarUsuario(dados) {
         const dadosResposta = await resposta.json();
         
         if (dadosResposta.sucesso) {
-            console.log('✅ Cadastro realizado:', dadosResposta.usuario);
+            console.log(' Cadastro realizado:', dadosResposta.usuario);
             localStorage.setItem('token', dadosResposta.token);
             return dadosResposta;
         } else {
-            console.error('❌ Erro:', dadosResposta.erro);
+            console.error(' Erro:', dadosResposta.erro);
             throw new Error(dadosResposta.erro);
         }
     } catch (erro) {
@@ -171,7 +171,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.value = pastedText;
                 validarCampo(this, 'letrasEspacos', nomeWarning, nomeError);
             } else {
-                alert('⚠️ Não é permitido colar caracteres especiais ou números neste campo!');
+                alert(' Não é permitido colar caracteres especiais ou números neste campo!');
             }
         });
     }
@@ -189,7 +189,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.value = pastedText;
                 validarCampo(this, 'letrasNumeros', turmaWarning, turmaError);
             } else {
-                alert('⚠️ Não é permitido colar caracteres especiais neste campo! Use apenas letras e números.');
+                alert(' Não é permitido colar caracteres especiais neste campo! Use apenas letras e números.');
             }
         });
     }
@@ -207,7 +207,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.value = pastedText;
                 validarCampo(this, 'letrasNumeros', salaWarning, salaError);
             } else {
-                alert('⚠️ Não é permitido colar caracteres especiais neste campo! Use apenas letras e números.');
+                alert(' Não é permitido colar caracteres especiais neste campo! Use apenas letras e números.');
             }
         });
     }
@@ -260,7 +260,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Validar termos
             const termsCheckbox = document.getElementById('terms');
             if (!termsCheckbox.checked) {
-                alert('⚠️ Você deve aceitar os termos e condições para continuar!');
+                alert(' Você deve aceitar os termos e condições para continuar!');
                 return;
             }
             
@@ -277,10 +277,10 @@ document.addEventListener('DOMContentLoaded', function() {
             
             try {
                 const resultado = await cadastrarUsuario(dados);
-                alert('✅ Cadastro realizado com sucesso!');
-                window.location.href = 'usuario/dashboard.html';
+                alert(' Cadastro realizado com sucesso!');
+                window.location.href = './dashboard.html';
             } catch (erro) {
-                alert('❌ Erro ao cadastrar: ' + erro.message);
+                alert(' Erro ao cadastrar: ' + erro.message);
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalText;
             }

@@ -173,7 +173,7 @@ router.get('/protocolo/:protocolo', async (req, res) => {
 // Criar nova reclamação
 router.post('/', async (req, res) => {
   try {
-    console.log('📝 Dados recebidos para reclamação:', req.body);
+    console.log(' Dados recebidos para reclamação:', req.body);
     
     if (!req.body.titulo || !req.body.descricao) {
       return res.status(400).json({ 
@@ -194,11 +194,11 @@ router.post('/', async (req, res) => {
       status: 'aberta'
     };
     
-    console.log('📦 Dados preparados para inserção:', dadosReclamacao);
+    console.log(' Dados preparados para inserção:', dadosReclamacao);
     
     const reclamacao = await Reclamacao.create(dadosReclamacao);
     
-    console.log('✅ Reclamação criada com sucesso! Protocolo:', reclamacao.protocolo);
+    console.log(' Reclamação criada com sucesso! Protocolo:', reclamacao.protocolo);
     
     res.status(201).json({
       success: true,
@@ -207,7 +207,7 @@ router.post('/', async (req, res) => {
       protocolo: reclamacao.protocolo
     });
   } catch (error) {
-    console.error('❌ Erro ao criar reclamação:', error);
+    console.error(' Erro ao criar reclamação:', error);
     res.status(400).json({ 
       success: false,
       error: error.message 
@@ -226,7 +226,7 @@ router.put('/:id', async (req, res) => {
     
     await reclamacao.update(req.body);
     
-    console.log('✅ Reclamação atualizada com sucesso! ID:', reclamacao.id);
+    console.log(' Reclamação atualizada com sucesso! ID:', reclamacao.id);
     
     res.json({
       success: true,
@@ -234,7 +234,7 @@ router.put('/:id', async (req, res) => {
       data: reclamacao
     });
   } catch (error) {
-    console.error('❌ Erro ao atualizar reclamação:', error);
+    console.error(' Erro ao atualizar reclamação:', error);
     res.status(400).json({ error: error.message });
   }
 });
@@ -256,7 +256,7 @@ router.patch('/:id/status', async (req, res) => {
     
     await reclamacao.update({ status });
     
-    console.log(`✅ Status da reclamação ${reclamacao.id} atualizado para: ${status}`);
+    console.log(` Status da reclamação ${reclamacao.id} atualizado para: ${status}`);
     
     res.json({
       success: true,
@@ -264,7 +264,7 @@ router.patch('/:id/status', async (req, res) => {
       data: reclamacao
     });
   } catch (error) {
-    console.error('❌ Erro ao atualizar status:', error);
+    console.error(' Erro ao atualizar status:', error);
     res.status(400).json({ error: error.message });
   }
 });

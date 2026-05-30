@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPIL - Recuperar Senha | Sistema de Gestão</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        input {
+            transition: all 0.3s ease;
+        }
+        button {
+            transition: all 0.3s ease;
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+        input:focus {
+            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .animate-pulse-slow {
+            animation: pulse 2s infinite;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .toast-slide-in {
+            animation: slideInRight 0.3s ease;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-200 flex items-center justify-center p-4">
+    <div class="w-full max-w-md">
+        <div class="bg-white rounded-xl shadow-2xl overflow-hidden">
+            <div class="p-6">
+                <!-- Cabeçalho -->
+                <div class="flex flex-col items-center mb-6">
+                    <div class="bg-gradient-to-r from-orange-400 to-orange-600 text-white text-3xl font-bold px-5 py-3 rounded-lg shadow-lg mb-3">
+                        IPIL
+                    </div>
+                    <div class="text-center">
+                        <div class="text-lg font-bold text-gray-800 tracking-tight">SISTEMA DE GESTÃO</div>
+                        <div class="text-sm font-semibold text-orange-600">DE RECLAMAÇÕES E DENÚNCIAS</div>
+                    </div>
+                </div>
+
+                <!-- Passo 1: Solicitar Email -->
+                <div id="step1" class="fade-in">
+                    <div class="mb-4 text-center">
+                        <div class="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <i class="fas fa-key text-orange-600 text-2xl"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-gray-800">Recuperar Senha</h2>
+                        <p class="text-sm text-gray-600 mt-1">Digite seu email para receber o código de verificação</p>
+                    </div>
+
+                    <form id="formSolicitar">
+                        <div class="mb-5">
+                            <label for="email" class="block text-gray-700 font-medium mb-2 text-sm">
+                                <i class="fas fa-envelope text-orange-500 mr-2"></i>Email
+                            </label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-envelope text-gray-400 text-sm"></i>
+                                </div>
+                                <input type="email" id="email" name="email" required 
+                                       class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition duration-200 text-sm"
+                                       placeholder="seu@email.com">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full bg-gradient-to-r from-orange-400 to-orange-600 hover:from-orange-500 hover:to-orange-700 text-white font-semibold py-2.5 rounded-lg shadow-md hover:shadow-lg transition duration-300 text-sm">
+                            <i class="fas fa-paper-plane mr-2"></i>Enviar Código
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Passo 2: Verificar Código -->
+                <div id="step2" class="fade-in" style="display: none;">
+                    <div class="mb-4 text-center">
+                        <div class="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <i class="fas fa-shield-alt text-orange-600 text-2xl"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-gray-800">Código de Verificação</h2>
+                        <p id="emailEnviado" class="text-sm text-gray-600 mt-1"></p>
+                    </div>
+
+                    <form id="formVerificar">
+                        <div class="mb-5">
+                            <label for="codigo" class="block text-gray-700 font-medium mb-2 text-sm">
+                                <i class="fas fa-qrcode text-orange-500 mr-2"></i>Código de Verificação
+                            </label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-qrcode text-gray-400 text-sm"></i>
+                                </div>
+                                <input type="text" id="codigo" name="codigo" required maxlength="6"
+                                       class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition duration-200 text-sm tracking-wider text-center"
+                                       placeholder="000000">
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">Digite o código de 6 dígitos enviado para seu email</p>
+                        </div>
+
+                        <button type="submit" class="w-full bg-gradient-to-r from-orange-400 to-orange-600 hover:from-orange-500 hover:to-orange-700 text-white font-semibold py-2.5 rounded-lg shadow-md hover:shadow-lg transition duration-300 text-sm">
+                            <i class="fas fa-check-circle mr-2"></i>Verificar Código
+                        </button>
+
+                        <div class="text-center mt-3">
+                            <button type="button" onclick="reenviarCodigo()" class="text-orange-600 hover:text-orange-800 text-xs font-medium transition">
+                                <i class="fas fa-redo-alt mr-1"></i>Reenviar código
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Passo 3: Nova Senha -->
+                <div id="step3" class="fade-in" style="display: none;">
+                    <div class="mb-4 text-center">
+                        <div class="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <i class="fas fa-lock text-orange-600 text-2xl"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-gray-800">Nova Senha</h2>
+                        <p class="text-sm text-gray-600 mt-1">Digite sua nova senha</p>
+                    </div>
+
+                    <form id="formNovaSenha">
+                        <div class="mb-4">
+                            <label for="novaSenha" class="block text-gray-700 font-medium mb-2 text-sm">
+                                <i class="fas fa-lock text-orange-500 mr-2"></i>Nova Senha
+                            </label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-lock text-gray-400 text-sm"></i>
+                                </div>
+                                <input type="password" id="novaSenha" name="novaSenha" required 
+                                       class="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition duration-200 text-sm"
+                                       placeholder="Mínimo 6 caracteres">
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                    <button type="button" class="toggleSenha text-gray-400 hover:text-gray-600">
+                                        <i class="fas fa-eye text-sm"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="senhaForca" class="mt-2">
+                                <div class="flex items-center gap-1">
+                                    <div class="h-1 flex-1 rounded-full bg-gray-200"></div>
+                                    <div class="h-1 flex-1 rounded-full bg-gray-200"></div>
+                                    <div class="h-1 flex-1 rounded-full bg-gray-200"></div>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">A senha deve ter no mínimo 6 caracteres</p>
+                            </div>
+                        </div>
+
+                        <div class="mb-5">
+                            <label for="confirmarSenha" class="block text-gray-700 font-medium mb-2 text-sm">
+                                <i class="fas fa-check-circle text-orange-500 mr-2"></i>Confirmar Senha
+                            </label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-check-circle text-gray-400 text-sm"></i>
+                                </div>
+                                <input type="password" id="confirmarSenha" name="confirmarSenha" required 
+                                       class="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition duration-200 text-sm"
+                                       placeholder="Confirme sua nova senha">
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                    <button type="button" class="toggleSenha text-gray-400 hover:text-gray-600">
+                                        <i class="fas fa-eye text-sm"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full bg-gradient-to-r from-orange-400 to-orange-600 hover:from-orange-500 hover:to-orange-700 text-white font-semibold py-2.5 rounded-lg shadow-md hover:shadow-lg transition duration-300 text-sm">
+                            <i class="fas fa-save mr-2"></i>Alterar Senha
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Links de navegação -->
+                <div class="mt-5 text-center">
+                    <a href="login.html" class="inline-flex items-center text-orange-600 hover:text-orange-800 font-medium transition duration-200 text-sm">
+                        <i class="fas fa-arrow-left mr-1"></i>
+                        Voltar para o login
+                    </a>
+                </div>
+
+                <!-- Botão de ajuda -->
+                <div class="mt-4 text-center">
+                    <button type="button" onclick="abrirAjuda()" class="text-gray-500 hover:text-orange-600 text-xs transition">
+                        <i class="fas fa-question-circle mr-1"></i>Precisa de ajuda?
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Rodapé -->
+        <div class="text-center mt-4 text-gray-500 text-[10px]">
+            <p>© 2026 Instituto Politécnico Industrial de Luanda - IPIL</p>
+        </div>
+    </div>
+
+    <!-- Modal de Ajuda -->
+    <div id="ajudaModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4" style="display: none;">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+            <div class="bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-4 flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-question-circle text-white text-xl"></i>
+                    <h3 class="text-xl font-bold text-white">Ajuda - Recuperar Senha</h3>
+                </div>
+                <button onclick="fecharAjuda()" class="text-white hover:text-gray-200 transition">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <div class="space-y-4">
+                    <div class="flex items-start space-x-3">
+                        <div class="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span class="text-orange-600 font-bold">1</span>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-800">Digite seu email</p>
+                            <p class="text-sm text-gray-500">Informe o email cadastrado no sistema</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-3">
+                        <div class="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span class="text-orange-600 font-bold">2</span>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-800">Receba o código</p>
+                            <p class="text-sm text-gray-500">Você receberá um código de 6 dígitos por email</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-3">
+                        <div class="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span class="text-orange-600 font-bold">3</span>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-800">Digite o código</p>
+                            <p class="text-sm text-gray-500">Insira o código recebido para verificar sua identidade</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-3">
+                        <div class="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span class="text-orange-600 font-bold">4</span>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-800">Crie uma nova senha</p>
+                            <p class="text-sm text-gray-500">Defina uma nova senha segura para sua conta</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-6 p-3 bg-yellow-50 rounded-lg">
+                    <p class="text-xs text-yellow-700">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Se não receber o email, verifique sua caixa de spam ou entre em contato com o suporte.
+                    </p>
+                </div>
+            </div>
+            <div class="px-6 py-4 bg-gray-50 flex justify-end">
+                <button onclick="fecharAjuda()" class="px-5 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition">
+                    <i class="fas fa-check mr-2"></i>Entendi
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="recuperar_senha.js"></script>
+</body>
+</html>

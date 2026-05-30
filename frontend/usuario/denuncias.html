@@ -46,7 +46,7 @@
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center space-x-3">
                     <div class="bg-gradient-to-r from-orange-400 to-orange-600 text-white text-xl font-bold px-4 py-2 rounded-lg shadow-md">IPIL</div>
-                    <div class="hidden md:block"><span class="text-gray-700 font-semibold">Sistema de Reclamações e Denúncias</span></div>
+                    <div class="hidden md:block"><span class="text-gray-700 font-semibold">Sistema de Gestão de Reclamações e Denúncias</span></div>
                 </div>
                 <div class="flex items-center space-x-4">
                     <button class="relative text-gray-600 hover:text-orange-600 transition">
@@ -58,7 +58,7 @@
                             <p id="usuarioNome" class="text-sm font-semibold text-gray-800">Carregando...</p>
                             <p id="usuarioProcesso" class="text-xs text-gray-500">Processo: ...</p>
                         </div>
-                        <div id="usuarioAvatar" class="w-10 h-10 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-white font-bold">JS</div>
+                        <div id="usuarioAvatar" role="button" tabindex="0" aria-label="Abrir imagem do perfil" class="w-10 h-10 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-white font-bold">JS</div>
                     </div>
                 </div>
             </div>
@@ -148,6 +148,7 @@
         </div>
     </div>
 
+    <script src="../shared/profile.js"></script>
     <script src="./denuncias.js"></script>
 </body>
 </html>

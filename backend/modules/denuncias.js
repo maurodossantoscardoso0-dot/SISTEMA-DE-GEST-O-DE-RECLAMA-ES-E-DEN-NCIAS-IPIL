@@ -173,7 +173,7 @@ router.get('/protocolo/:protocolo', async (req, res) => {
 // Criar nova denúncia
 router.post('/', async (req, res) => {
   try {
-    console.log('📝 Dados recebidos para denúncia:', req.body);
+    console.log(' Dados recebidos para denúncia:', req.body);
     
     if (!req.body.titulo || !req.body.descricao) {
       return res.status(400).json({ 
@@ -194,11 +194,11 @@ router.post('/', async (req, res) => {
       status: 'pendente'
     };
     
-    console.log('📦 Dados preparados para inserção:', dadosDenuncia);
+    console.log(' Dados preparados para inserção:', dadosDenuncia);
     
     const denuncia = await Denuncia.create(dadosDenuncia);
     
-    console.log('✅ Denúncia criada com sucesso! Protocolo:', denuncia.protocolo);
+    console.log(' Denúncia criada com sucesso! Protocolo:', denuncia.protocolo);
     
     res.status(201).json({
       success: true,
@@ -207,7 +207,7 @@ router.post('/', async (req, res) => {
       protocolo: denuncia.protocolo
     });
   } catch (error) {
-    console.error('❌ Erro ao criar denúncia:', error);
+    console.error(' Erro ao criar denúncia:', error);
     res.status(400).json({ 
       success: false,
       error: error.message 
@@ -226,7 +226,7 @@ router.put('/:id', async (req, res) => {
     
     await denuncia.update(req.body);
     
-    console.log('✅ Denúncia atualizada com sucesso! ID:', denuncia.id);
+    console.log(' Denúncia atualizada com sucesso! ID:', denuncia.id);
     
     res.json({
       success: true,
@@ -234,7 +234,7 @@ router.put('/:id', async (req, res) => {
       data: denuncia
     });
   } catch (error) {
-    console.error('❌ Erro ao atualizar denúncia:', error);
+    console.error(' Erro ao atualizar denúncia:', error);
     res.status(400).json({ error: error.message });
   }
 });
@@ -256,7 +256,7 @@ router.patch('/:id/status', async (req, res) => {
     
     await denuncia.update({ status });
     
-    console.log(`✅ Status da denúncia ${denuncia.id} atualizado para: ${status}`);
+    console.log(` Status da denúncia ${denuncia.id} atualizado para: ${status}`);
     
     res.json({
       success: true,
@@ -264,7 +264,7 @@ router.patch('/:id/status', async (req, res) => {
       data: denuncia
     });
   } catch (error) {
-    console.error('❌ Erro ao atualizar status:', error);
+    console.error(' Erro ao atualizar status:', error);
     res.status(400).json({ error: error.message });
   }
 });

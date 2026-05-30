@@ -39,19 +39,18 @@
 </head>
 <body class="bg-gray-50">
     
-    <!-- ============================================ -->
     <!-- NAVBAR SUPERIOR DINÂMICA -->
-    <!-- ============================================ -->
     <nav class="bg-white shadow-lg border-b border-gray-200 fixed w-full z-50 top-0">
         <div class="container mx-auto px-4">
             <div class="flex justify-between items-center h-16">
-                <!-- Logo e Título -->
+
+                <!-- Logotipo e Título -->
                 <div class="flex items-center space-x-3">
                     <div class="bg-gradient-to-r from-orange-400 to-orange-600 text-white text-xl font-bold px-4 py-2 rounded-lg shadow-md">
                         IPIL
                     </div>
                     <div class="hidden md:block">
-                        <span class="text-gray-700 font-semibold">Sistema de Reclamações e Denúncias</span>
+                        <span class="text-gray-700 font-semibold">Sistema de Gestão de Reclamações e Denúncias</span>
                     </div>
                 </div>
 
@@ -78,17 +77,14 @@
         </div>
     </nav>
 
-    <!-- ============================================ -->
     <!-- LAYOUT PRINCIPAL COM SIDEBAR E CONTEÚDO -->
-    <!-- ============================================ -->
     <div class="flex pt-16">
-        
-        <!-- ============================================ -->
+         
         <!-- SIDEBAR - MENU DE NAVEGAÇÃO DINÂMICA -->
-        <!-- ============================================ -->
         <aside class="w-64 bg-white shadow-lg h-screen fixed hidden lg:block overflow-y-auto">
             <div class="p-6">
-                <!-- Perfil Resumido Mobile -->
+
+                <!-- Perfil -->
                 <div class="flex items-center space-x-3 mb-8 pb-6 border-b border-gray-200 lg:hidden">
                     <div id="avatarMobile" class="w-12 h-12 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
                         JS
@@ -143,9 +139,7 @@
             </div>
         </aside>
 
-        <!-- ============================================ -->
         <!-- NAVEGAÇÃO MOBILE -->
-        <!-- ============================================ -->
         <div class="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
             <div class="grid grid-cols-4 gap-1 p-2">
                 <a href="./dashboard.html" class="flex flex-col items-center py-2 px-1 text-gray-500 hover:text-orange-600 transition">
@@ -167,9 +161,7 @@
             </div>
         </div>
 
-        <!-- ============================================ -->
         <!-- CONTEÚDO PRINCIPAL - NOVA SUBMISSÃO -->
-        <!-- ============================================ -->
         <div class="flex-1 lg:ml-64">
             <div class="container mx-auto px-4 py-8 pb-24 lg:pb-8">
                 
@@ -346,7 +338,6 @@
                         <li>Todas as submissões são analisadas pela equipe responsável em até 5 dias úteis</li>
                         <li>Você receberá notificações sobre o andamento da sua submissão</li>
                         <li>Mantenha seus dados de contato atualizados para receber retornos</li>
-                        <li>Submissões anônimas não podem ser acompanhadas pelo sistema</li>
                         <li>Em caso de emergência, contacte as autoridades competentes</li>
                     </ul>
                 </div>
@@ -360,6 +351,7 @@
     </div>
 
     <!-- SCRIPTS -->
+    <script src="../shared/profile.js"></script>
     <script src="./novasubmissao.js"></script>
 </body>
 </html>

@@ -1,8 +1,7 @@
 // login.js - Com modais interativos e estilizados
 
-// ============================================
 // MODAL DE NOTIFICAÇÃO ESTILIZADO
-// ============================================
+
 function showModal(type, title, message, onConfirm = null) {
     // Remover modal existente se houver
     const existingModal = document.getElementById('customModal');
@@ -145,9 +144,8 @@ function showModal(type, title, message, onConfirm = null) {
     }
 }
 
-// ============================================
-// TOAST DE NOTIFICAÇÃO (TEMPORÁRIO)
-// ============================================
+// TOAST DE NOTIFICAÇÃO
+
 function showToast(type, message, duration = 3000) {
     const existingToast = document.getElementById('customToast');
     if (existingToast) existingToast.remove();
@@ -178,9 +176,8 @@ function showToast(type, message, duration = 3000) {
     }, duration);
 }
 
-// ============================================
 // LOADING OVERLAY
-// ============================================
+
 function showLoading(show, message = 'Processando...') {
     let overlay = document.getElementById('loadingOverlay');
     
@@ -207,9 +204,8 @@ function showLoading(show, message = 'Processando...') {
     }
 }
 
-// ============================================
 // FUNÇÃO PRINCIPAL DE LOGIN
-// ============================================
+
 async function fazerLogin(event) {
     if (event) {
         event.preventDefault();
@@ -219,7 +215,7 @@ async function fazerLogin(event) {
         const numero_processo = document.getElementById('processo').value;
         const senha = document.getElementById('password').value;
         
-        console.log('📝 Dados do formulário:', { numero_processo, senha: '********' });
+        console.log('Dados do formulário:', { numero_processo, senha: '********' });
         
         // Validações com modal estilizado
         if (!numero_processo || !senha) {
@@ -258,12 +254,12 @@ async function fazerLogin(event) {
         });
         
         const resultado = await response.json();
-        console.log('📡 Resposta do servidor:', resultado);
+        console.log('Resposta do servidor:', resultado);
         
         showLoading(false);
         
         if (response.ok && resultado.success) {
-            console.log('✅ Login bem-sucedido:', resultado.usuario);
+            console.log('Login bem-sucedido:', resultado.usuario);
             
             sessionStorage.setItem('usuarioLogado', JSON.stringify(resultado.usuario));
             sessionStorage.setItem('token', Date.now().toString());
@@ -274,10 +270,10 @@ async function fazerLogin(event) {
             // Redirecionar após 2 segundos
             setTimeout(() => {
                 if (resultado.usuario.tipo === 'admin') {
-                    console.log('👑 Redirecionando para painel administrativo...');
+                    console.log('Redirecionando para painel administrativo...');
                     window.location.href = 'admin/dashboardAdmin.html';
                 } else {
-                    console.log('🎓 Redirecionando para painel do aluno...');
+                    console.log('Redirecionando para painel do aluno...');
                     window.location.href = 'usuario/dashboard.html';
                 }
             }, 2000);
@@ -292,14 +288,14 @@ async function fazerLogin(event) {
             }
             
             showModal('error', 'Falha no Login', mensagemErro);
-            console.error('❌ Erro no login:', resultado);
+            console.error('Erro no login:', resultado);
             
             // Remover foco do botão
             btnSubmit.disabled = false;
             btnSubmit.innerHTML = textoOriginal;
         }
     } catch (error) {
-        console.error('❌ Erro na requisição:', error);
+        console.error('Erro na requisição:', error);
         showLoading(false);
         showModal('error', 'Erro de Conexão', 'Não foi possível conectar ao servidor. Verifique se o servidor está rodando e tente novamente.');
         
@@ -313,9 +309,8 @@ async function fazerLogin(event) {
     return false;
 }
 
-// ============================================
 // ALTERNAR VISIBILIDADE DA SENHA
-// ============================================
+
 function setupTogglePassword() {
     const togglePassword = document.getElementById('togglePassword');
     const password = document.getElementById('password');
@@ -334,23 +329,21 @@ function setupTogglePassword() {
     }
 }
 
-// ============================================
-// FUNÇÃO ESQUECI MINHA SENHA
-// ============================================
+// Função esqueci a minha senha
+
 function esqueciSenha() {
     showModal('info', 'Recuperação de Senha', 'Entre em contato com o administrador do sistema para redefinir sua senha.\n\nEmail: suporte@ipil.ao\nTelefone: (+244) 000-000-000');
 }
 
-// ============================================
-// INICIALIZAR EVENTOS
-// ============================================
+// Inicializar eventos
+
 function initializeEvents() {
     const form = document.getElementById('loginForm');
     if (form) {
         form.addEventListener('submit', fazerLogin);
-        console.log('✅ Evento de submit adicionado ao formulário');
+        console.log('Evento de submit adicionado ao formulário');
     } else {
-        console.error('❌ Formulário não encontrado');
+        console.error('Formulário não encontrado');
     }
     
     // Adicionar link "Esqueci minha senha"
@@ -363,9 +356,8 @@ function initializeEvents() {
     }
 }
 
-// ============================================
-// VERIFICAR SESSÃO EXISTENTE
-// ============================================
+// Verificar sessão existente 
+
 function verificarSessaoExistente() {
     const usuarioLogado = sessionStorage.getItem('usuarioLogado');
     if (usuarioLogado) {
@@ -379,12 +371,10 @@ function verificarSessaoExistente() {
         });
     }
 }
+// Inicializar
 
-// ============================================
-// INICIALIZAR
-// ============================================
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Página de login carregada - Modo Premium');
+    console.log('Página de login carregada');
     
     setupTogglePassword();
     initializeEvents();
@@ -402,9 +392,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// ============================================
-// EXPORTAR FUNÇÕES GLOBAIS
-// ============================================
+// Exportar funções globais
+
 window.fazerLogin = fazerLogin;
 window.logout = logout;
 window.getUsuarioLogado = getUsuarioLogado;
@@ -412,9 +401,7 @@ window.isAdmin = isAdmin;
 window.isAluno = isAluno;
 window.esqueciSenha = esqueciSenha;
 
-// ============================================
-// FUNÇÕES AUXILIARES
-// ============================================
+// Funções auxiliares
 function logout() {
     showModal('confirm', 'Sair do Sistema', 'Tem certeza que deseja sair? Você será redirecionado para a página de login.', (confirmado) => {
         if (confirmado) {

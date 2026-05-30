@@ -1,6 +1,5 @@
-// ============================================
-// MODAL DE NOTIFICAÇÃO ESTILIZADO
-// ============================================
+// Modal de notificação estilizado
+
 function showModal(type, title, message, onConfirm = null) {
     const existingModal = document.getElementById('customModal');
     if (existingModal) existingModal.remove();
@@ -80,9 +79,8 @@ function showModal(type, title, message, onConfirm = null) {
     }
 }
 
-// ============================================
-// TOAST DE NOTIFICAÇÃO
-// ============================================
+
+// Toast de notificações
 function mostrarNotificacao(mensagem, tipo = 'success') {
     const existingToast = document.getElementById('customToast');
     if (existingToast) existingToast.remove();
@@ -109,9 +107,9 @@ function mostrarNotificacao(mensagem, tipo = 'success') {
     }, 3000);
 }
 
-// ============================================
-// LOADING OVERLAY
-// ============================================
+
+// Loading overlay
+
 function showLoading(show, message = 'Processando...') {
     let overlay = document.getElementById('loadingOverlay');
     
@@ -137,9 +135,7 @@ function showLoading(show, message = 'Processando...') {
     }
 }
 
-// ============================================
-// FUNÇÕES DE VALIDAÇÃO
-// ============================================
+// Funções de validações
 function validarApenasLetrasEspacos(valor) {
     const regex = /^[A-Za-zÀ-ÿ\s]+$/;
     return regex.test(valor);
@@ -160,12 +156,11 @@ function validarTelefone(telefone) {
     return regex.test(telefone);
 }
 
-// ============================================
-// VALIDAÇÃO DE DATA DE NASCIMENTO (1976 a 2010)
-// ============================================
+
+// Validação de data de nascimento (1976 a 2010)
 function validarDataNascimento(dataNascimento) {
     if (!dataNascimento) {
-        return { valido: false, mensagem: '⚠️ A data de nascimento é obrigatória.' };
+        return { valido: false, mensagem: ' A data de nascimento é obrigatória.' };
     }
     
     const data = new Date(dataNascimento);
@@ -174,12 +169,12 @@ function validarDataNascimento(dataNascimento) {
     
     // Verificar se a data é válida
     if (isNaN(data.getTime())) {
-        return { valido: false, mensagem: '❌ Data de nascimento inválida. Use o formato DD/MM/AAAA.' };
+        return { valido: false, mensagem: ' Data de nascimento inválida. Use o formato DD/MM/AAAA.' };
     }
     
     // Verificar se a data não é futura
     if (data > dataAtual) {
-        return { valido: false, mensagem: '❌ Data de nascimento não pode ser no futuro!' };
+        return { valido: false, mensagem: ' Data de nascimento não pode ser no futuro!' };
     }
     
     // Obter o ano de nascimento
@@ -193,7 +188,7 @@ function validarDataNascimento(dataNascimento) {
     if (anoNascimento < ANO_MINIMO) {
         return { 
             valido: false, 
-            mensagem: `❌ Ano de nascimento inválido! Apenas pessoas nascidas a partir de ${ANO_MINIMO} podem se cadastrar. (Ano informado: ${anoNascimento})` 
+            mensagem: ` Ano de nascimento inválido! Apenas pessoas nascidas a partir de ${ANO_MINIMO} podem se cadastrar. (Ano informado: ${anoNascimento})` 
         };
     }
     
@@ -211,7 +206,7 @@ function validarDataNascimento(dataNascimento) {
         
         return { 
             valido: false, 
-            mensagem: `❌ Ano de nascimento inválido! Apenas pessoas com até ${ANO_MAXIMO + 1} anos podem se cadastrar. (Você aparenta ter ${idade} anos. Ano informado: ${anoNascimento})` 
+            mensagem: ` Ano de nascimento inválido! Apenas pessoas com até ${ANO_MAXIMO + 1} anos podem se cadastrar. (Você aparenta ter ${idade} anos. Ano informado: ${anoNascimento})` 
         };
     }
     
@@ -242,7 +237,7 @@ function validarDataNascimento(dataNascimento) {
     
     return { 
         valido: true, 
-        mensagem: `✅ Cadastro permitido! Ano de nascimento: ${anoNascimento} (${idade} anos, ${meses} meses e ${dias} dias)`,
+        mensagem: ` Cadastro permitido! Ano de nascimento: ${anoNascimento} (${idade} anos, ${meses} meses e ${dias} dias)`,
         idade: idade,
         meses: meses,
         dias: dias,
@@ -250,9 +245,8 @@ function validarDataNascimento(dataNascimento) {
     };
 }
 
-// ============================================
-// FUNÇÃO PARA VALIDAR CAMPO EM TEMPO REAL
-// ============================================
+// Função para validar campo em tempo real
+
 function validarCampo(input, tipo, warningIcon, errorMsg) {
     let valor = input.value.trim();
     let valido = false;
@@ -278,9 +272,8 @@ function validarCampo(input, tipo, warningIcon, errorMsg) {
     }
 }
 
-// ============================================
-// VERIFICAR FORÇA DA SENHA
-// ============================================
+// Verificar a força da senha
+
 function verificarForcaSenha(senha) {
     let forca = 0;
     let mensagem = '';
@@ -303,9 +296,8 @@ function verificarForcaSenha(senha) {
     }
 }
 
-// ============================================
-// VALIDAÇÃO DO FORMULÁRIO COMPLETO (COM MODAIS)
-// ============================================
+// Validação do formulário completo (com modais)
+
 async function validarFormulario(dados) {
     // Validar nome (apenas letras e espaços)
     if (!dados.nome || !validarApenasLetrasEspacos(dados.nome)) {
@@ -418,9 +410,8 @@ async function validarFormulario(dados) {
     return true;
 }
 
-// ============================================
-// FUNÇÃO DE CADASTRO DE USUÁRIO (CORRIGIDA)
-// ============================================
+// Função de cadastro de usuários
+
 async function cadastrarUsuario(dados) {
     try {
         // Converter a data para o formato YYYY-MM-DD se necessário
@@ -444,9 +435,9 @@ async function cadastrarUsuario(dados) {
             sala: dados.sala.toUpperCase()
         };
 
-        console.log('📤 Enviando dados para API:', payload);
+        console.log(' Enviando dados para API:', payload);
 
-        // 🔥 CORREÇÃO: Usar a URL completa do backend na porta 3000
+        // CORREÇÃO: Usar a URL completa do backend na porta 3000
         const API_URL = 'http://localhost:3000/api/usuarios';
         
         const resposta = await fetch(API_URL, {
@@ -460,20 +451,19 @@ async function cadastrarUsuario(dados) {
         const dadosResposta = await resposta.json();
         
         if (dadosResposta.success) {
-            console.log('✅ Cadastro realizado:', dadosResposta.usuario);
+            console.log('Cadastro realizado:', dadosResposta.usuario);
             return dadosResposta;
         } else {
             throw new Error(dadosResposta.error || 'Erro ao realizar cadastro');
         }
     } catch (erro) {
-        console.error('❌ Erro na requisição:', erro);
+        console.error('Erro na requisição:', erro);
         throw erro;
     }
 }
 
-// ============================================
-// FUNÇÃO PARA VALIDAR IDADE EM TEMPO REAL
-// ============================================
+// Função para validar a idade em tempo real
+
 function configurarValidacaoIdade() {
     const dataNascimentoInput = document.getElementById('anoNascimento');
     if (dataNascimentoInput) {
@@ -501,7 +491,7 @@ function configurarValidacaoIdade() {
                 this.classList.add('border-green-500');
                 
                 // Mostrar notificação de sucesso
-                mostrarNotificacao('✅ Data de nascimento válida!', 'success');
+                mostrarNotificacao('Data de nascimento válida!', 'success');
                 
                 // Remover a classe verde após 3 segundos
                 setTimeout(() => {
@@ -522,9 +512,8 @@ function configurarValidacaoIdade() {
     }
 }
 
-// ============================================
-// BLOQUEIO DE TECLAS INVÁLIDAS
-// ============================================
+// Bloqueio de teclas inválidas
+
 function bloquearTeclasInvalidas(event, tipo) {
     const tecla = event.key;
     
@@ -552,21 +541,20 @@ function bloquearTeclasInvalidas(event, tipo) {
     return true;
 }
 
-// ============================================
-// INICIALIZAÇÃO
-// ============================================
+// Inicialização
+
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Página de registro carregada');
+    console.log('Página de registro carregada');
     
     // Verificar se o servidor está online
     async function verificarServidor() {
         try {
             const resposta = await fetch('http://localhost:3000/health');
             if (resposta.ok) {
-                console.log('✅ Servidor backend está online na porta 3000');
+                console.log('Servidor backend está online na porta 3000');
             }
         } catch (error) {
-            console.warn('⚠️ Servidor backend não está respondendo em http://localhost:3000');
+            console.warn('Servidor backend não está respondendo em http://localhost:3000');
             console.warn('Certifique-se de que o servidor Node.js está rodando com: node server.js');
         }
     }

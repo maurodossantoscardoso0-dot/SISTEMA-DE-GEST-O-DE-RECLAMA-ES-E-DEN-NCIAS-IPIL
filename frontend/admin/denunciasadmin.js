@@ -1,4 +1,3 @@
-// denunciasadmin.js - Script da página de Denúncias (Versão Melhorada)
 
 let denunciasData = [];
 let usuariosData = [];
@@ -114,8 +113,96 @@ function showToast(type, message, duration = 3000) {
     }, duration);
 }
 
+async function buscarAnexos(denunciaId, reclamacaoId) {
+    try {
+        let url;
+        if (denunciaId) {
+            url = `http://localhost:3000/api/anexos/denuncia/${denunciaId}`;
+        } else if (reclamacaoId) {
+            url = `http://localhost:3000/api/anexos/reclamacao/${reclamacaoId}`;
+        } else {
+            return [];
+        }
+
+        const response = await fetch(url);
+        const data = await response.json();
+        return data.success ? data.anexos : [];
+    } catch (error) {
+        console.error('Erro ao buscar anexos:', error);
+        return [];
+    }
+}
+
+function criarUrlAnexo(anexo) {
+    if (!anexo) return '#';
+    if (anexo.base64) {
+        return anexo.base64.startsWith('data:')
+            ? anexo.base64
+            : `data:${anexo.tipo || 'application/octet-stream'};base64,${anexo.base64}`;
+    }
+    if (anexo.url) return anexo.url;
+    if (anexo.caminho) return `http://localhost:3000${anexo.caminho}`;
+    return '#';
+}
+
+function formatFileSize(bytes) {
+    if (!bytes) return '';
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${sizes[i]}`;
+}
+
+function renderAnexosHtml(anexos = []) {
+    if (!anexos || anexos.length === 0) {
+        return `
+            <div class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200 text-center text-sm text-gray-500">
+                <i class="fas fa-paperclip text-gray-400 text-lg mb-2 block"></i>
+                Nenhum anexo disponível.
+            </div>
+        `;
+    }
+
+    return `
+        <div class="mt-4">
+            <div class="flex items-center space-x-2 mb-3">
+                <i class="fas fa-paperclip text-orange-500"></i>
+                <span class="font-semibold text-gray-700">Anexos (${anexos.length})</span>
+            </div>
+            <div class="grid grid-cols-1 gap-3">
+                ${anexos.map(anexo => {
+                    const fileName = anexo.nome || 'Arquivo';
+                    const fileExt = fileName.split('.').pop().toLowerCase();
+                    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(fileExt);
+                    const fileUrl = criarUrlAnexo(anexo);
+                    const fileIcon = isImage ? 'fa-file-image' : fileExt === 'pdf' ? 'fa-file-pdf' : ['doc', 'docx'].includes(fileExt) ? 'fa-file-word' : ['xls', 'xlsx'].includes(fileExt) ? 'fa-file-excel' : ['zip', 'rar', '7z'].includes(fileExt) ? 'fa-file-archive' : 'fa-file-alt';
+
+                    return `
+                        <div class="bg-gray-50 rounded-xl border border-gray-200 p-3">
+                            <div class="flex items-start gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center text-orange-600">
+                                    <i class="fas ${fileIcon}"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-semibold text-gray-800 truncate" title="${fileName}">${escapeHtml(fileName)}</p>
+                                    <p class="text-xs text-gray-500 mt-1">${isImage ? 'Imagem' : 'Documento'}${anexo.tamanho ? ` • ${formatFileSize(anexo.tamanho)}` : ''}</p>
+                                    <div class="mt-3">
+                                        ${isImage ? `<img src="${fileUrl}" alt="${escapeHtml(fileName)}" class="w-full max-h-52 object-contain rounded-lg border border-gray-200" />` : ''}
+                                        <a href="${fileUrl}" download="${escapeHtml(fileName)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 mt-3 text-orange-600 text-sm font-medium hover:text-orange-800">
+                                            <i class="fas fa-external-link-alt"></i> Abrir / Baixar anexo
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        </div>
+    `;
+}
+
 // Função para mostrar detalhes em modal
-function showDetailsModal(denuncia) {
+async function showDetailsModal(denuncia) {
     const nomeUsuario = getUsuarioNome(denuncia.usuario_id);
     const statusCores = {
         pendente: 'bg-yellow-100 text-yellow-800 border-yellow-300',
@@ -127,6 +214,7 @@ function showDetailsModal(denuncia) {
     const statusColor = statusCores[denuncia.status] || statusCores.pendente;
     const dataCriacao = new Date(denuncia.createdAt).toLocaleString('pt-PT');
     const dataAtualizacao = new Date(denuncia.updatedAt).toLocaleString('pt-PT');
+    const anexos = await buscarAnexos(denuncia.id, null);
     
     const categoriaLabels = {
         infraestrutura: '🏗️ Infraestrutura',
@@ -195,6 +283,7 @@ function showDetailsModal(denuncia) {
                     <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">${escapeHtml(denuncia.descricao)}</p>
                 </div>
             </div>
+            ${renderAnexosHtml(anexos)}
         </div>
     `;
     

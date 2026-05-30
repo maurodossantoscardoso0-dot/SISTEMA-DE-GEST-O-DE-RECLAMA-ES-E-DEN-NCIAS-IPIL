@@ -6,6 +6,7 @@
 let usuariosData = [];
 let usuariosFiltrados = [];
 let usuarioAdminAtual = null;
+let mostrarApenasOnline = false;
 
 // ============================================
 // FUNÇÕES DE FORMATAÇÃO DE DATAS CORRIGIDAS
@@ -296,16 +297,160 @@ function isProprioAdmin(usuarioId, usuarioNome) {
 // ============================================
 // BUSCAR USUÁRIOS
 // ============================================
-async function buscarUsuarios() {
+async function buscarUsuarios(onlineOnly = false) {
     try {
-        const response = await fetch('http://localhost:3000/api/usuarios');
+        const url = onlineOnly ? 'http://localhost:3000/api/usuarios?online=true' : 'http://localhost:3000/api/usuarios';
+        const response = await fetch(url);
         const data = await response.json();
-        usuariosData = Array.isArray(data) ? data : [];
+        usuariosData = Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : [];
         return usuariosData;
     } catch (error) {
         console.error('Erro ao buscar usuários:', error);
         showToast('error', 'Erro ao carregar usuários');
         return [];
+    }
+}
+
+async function buscarEstatisticasGerais() {
+    try {
+        const response = await fetch('http://localhost:3000/api/estatisticas/gerais');
+        const data = await response.json();
+        if (response.ok && data.success && data.data) {
+            return data.data;
+        }
+        return null;
+    } catch (error) {
+        console.error('Erro ao buscar estatísticas gerais:', error);
+        return null;
+    }
+}
+
+function atualizarContadoresGerais(estatisticas) {
+    if (!estatisticas) return;
+
+    const badgeDenuncias = document.getElementById('badgeDenuncias');
+    const badgeReclamacoes = document.getElementById('badgeReclamacoes');
+    const badgeUsuarios = document.getElementById('badgeUsuarios');
+
+    if (badgeDenuncias) {
+        badgeDenuncias.innerText = estatisticas.total_denuncias ?? '0';
+        badgeDenuncias.style.display = (estatisticas.total_denuncias || 0) > 0 ? 'inline-flex' : 'none';
+    }
+    if (badgeReclamacoes) {
+        badgeReclamacoes.innerText = estatisticas.total_reclamacoes ?? '0';
+        badgeReclamacoes.style.display = (estatisticas.total_reclamacoes || 0) > 0 ? 'inline-flex' : 'none';
+    }
+    if (badgeUsuarios) {
+        badgeUsuarios.innerText = estatisticas.total_usuarios ?? '0';
+        badgeUsuarios.style.display = (estatisticas.total_usuarios || 0) > 0 ? 'inline-flex' : 'none';
+    }
+}
+
+function isUsuarioOnline(usuario) {
+    if (!usuario || !usuario.ultimo_acesso) return false;
+    const ultimoAcesso = new Date(usuario.ultimo_acesso).getTime();
+    const limite = Date.now() - 30 * 60 * 1000; // últimos 30 minutos
+    return ultimoAcesso >= limite;
+}
+
+function toggleUsuariosOnline() {
+    mostrarApenasOnline = !mostrarApenasOnline;
+    const btn = document.getElementById('toggleOnlineBtn');
+    if (btn) {
+        btn.classList.toggle('bg-blue-700', mostrarApenasOnline);
+        btn.classList.toggle('bg-blue-600', !mostrarApenasOnline);
+        btn.innerHTML = mostrarApenasOnline ? '<i class="fas fa-wifi"></i><span>Mostrar todos</span>' : '<i class="fas fa-wifi"></i><span>Mostrar apenas online</span>';
+    }
+    aplicarFiltros();
+}
+
+function getInitials(nome) {
+    if (!nome) return 'U';
+    const partes = nome.trim().split(' ').filter(Boolean);
+    if (partes.length === 0) return 'U';
+    if (partes.length === 1) return partes[0].slice(0, 2).toUpperCase();
+    return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
+}
+
+async function exportUsuariosPdf() {
+    try {
+        const usuarios = usuariosFiltrados.length ? usuariosFiltrados : usuariosData;
+        if (usuarios.length === 0) {
+            showToast('info', 'Nenhum usuário para exportar.');
+            return;
+        }
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'landscape' });
+        doc.setFontSize(16);
+        doc.text('Relatório de Usuários', 14, 20);
+
+        const header = ['ID', 'Nome', 'Email', 'Tipo', 'Status', 'Último Acesso'];
+        const rows = usuarios.map(u => [
+            u.id,
+            u.nome,
+            u.email,
+            u.tipo === 'admin' ? 'Admin' : 'Usuário',
+            u.status || 'N/A',
+            u.ultimo_acesso ? new Date(u.ultimo_acesso).toLocaleString('pt-BR') : 'Nunca'
+        ]);
+
+        let startY = 30;
+        const lineHeight = 8;
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        header.forEach((text, index) => {
+            doc.text(text, 14 + index * 45, startY);
+        });
+        doc.setFont('helvetica', 'normal');
+        rows.forEach((row, rowIndex) => {
+            const y = startY + lineHeight * (rowIndex + 1);
+            row.forEach((cell, colIndex) => {
+                doc.text(String(cell), 14 + colIndex * 45, y);
+            });
+            if (y > 180) {
+                doc.addPage();
+                startY = 20;
+            }
+        });
+
+        doc.save('relatorio_usuarios.pdf');
+    } catch (error) {
+        console.error('Erro ao exportar PDF:', error);
+        showToast('error', 'Falha ao gerar PDF.');
+    }
+}
+
+async function exportUsuariosXlsx() {
+    try {
+        const usuarios = usuariosFiltrados.length ? usuariosFiltrados : usuariosData;
+        if (usuarios.length === 0) {
+            showToast('info', 'Nenhum usuário para exportar.');
+            return;
+        }
+
+        const worksheetData = [
+            ['ID', 'Nome', 'Email', 'Tipo', 'Status', 'Telefone', 'Último Acesso']
+        ];
+
+        usuarios.forEach(u => {
+            worksheetData.push([
+                u.id,
+                u.nome,
+                u.email,
+                u.tipo === 'admin' ? 'Admin' : 'Usuário',
+                u.status || 'N/A',
+                u.telefone || 'N/A',
+                u.ultimo_acesso ? new Date(u.ultimo_acesso).toLocaleString('pt-BR') : 'Nunca'
+            ]);
+        });
+
+        const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Usuários');
+        XLSX.writeFile(workbook, 'relatorio_usuarios.xlsx');
+    } catch (error) {
+        console.error('Erro ao exportar XLSX:', error);
+        showToast('error', 'Falha ao gerar XLSX.');
     }
 }
 
@@ -319,12 +464,15 @@ async function buscarEstatisticasUsuario(usuarioId) {
             fetch(`http://localhost:3000/api/reclamacoes/usuario/${usuarioId}`)
         ]);
         
-        const denuncias = denunciasRes.ok ? await denunciasRes.json() : [];
-        const reclamacoes = reclamacoesRes.ok ? await reclamacoesRes.json() : [];
+        const denunciasData = denunciasRes.ok ? await denunciasRes.json() : null;
+        const reclamacoesData = reclamacoesRes.ok ? await reclamacoesRes.json() : null;
+        
+        const denuncias = Array.isArray(denunciasData) ? denunciasData : Array.isArray(denunciasData?.data) ? denunciasData.data : [];
+        const reclamacoes = Array.isArray(reclamacoesData) ? reclamacoesData : Array.isArray(reclamacoesData?.data) ? reclamacoesData.data : [];
         
         return {
-            denuncias: Array.isArray(denuncias) ? denuncias : [],
-            reclamacoes: Array.isArray(reclamacoes) ? reclamacoes : []
+            denuncias,
+            reclamacoes
         };
     } catch (error) {
         console.error('Erro ao buscar estatísticas:', error);
@@ -452,7 +600,10 @@ async function ativarUsuario(id, nome) {
 // ============================================
 // VER DETALHES DO USUÁRIO (COM DATAS CORRIGIDAS)
 // ============================================
-async function verDetalhes(usuario) {
+async function verDetalhes(id) {
+    const usuario = usuariosData.find(u => u.id === id);
+    if (!usuario) return;
+
     const modal = document.getElementById('modalDetalhes');
     const modalConteudo = document.getElementById('modalConteudo');
     
@@ -487,7 +638,7 @@ async function verDetalhes(usuario) {
     };
     
     const tipoCor = usuario.tipo === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700';
-    const tipoTexto = usuario.tipo === 'admin' ? 'Administrador' : 'Aluno';
+    const tipoTexto = usuario.tipo === 'admin' ? 'Administrador' : 'Usuário';
     const isAdminAtual = usuarioAdminAtual && usuarioAdminAtual.id === usuario.id;
     
     modalConteudo.innerHTML = `
@@ -662,13 +813,15 @@ function renderizarUsuarios(usuarios) {
     const statusCores = {
         'ativo': 'text-green-600 bg-green-100',
         'inativo': 'text-yellow-600 bg-yellow-100',
-        'bloqueado': 'text-red-600 bg-red-100'
+        'bloqueado': 'text-red-600 bg-red-100',
+        'pendente': 'text-indigo-600 bg-indigo-100'
     };
     
     const statusTextos = {
         'ativo': 'Ativo',
         'inativo': 'Inativo',
-        'bloqueado': 'Bloqueado'
+        'bloqueado': 'Bloqueado',
+        'pendente': 'Pendente'
     };
     
     let html = '';
@@ -678,24 +831,37 @@ function renderizarUsuarios(usuarios) {
         const borderColor = usuario.tipo === 'admin' ? 'border-purple-500' : 'border-orange-500';
         const iconColor = usuario.tipo === 'admin' ? 'text-purple-500' : 'text-orange-500';
         const tipoBadge = usuario.tipo === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700';
-        const tipoTexto = usuario.tipo === 'admin' ? 'Administrador' : 'Aluno';
+        const tipoTexto = usuario.tipo === 'admin' ? 'Administrador' : 'Usuário';
         const isAdminAtual = usuarioAdminAtual && usuarioAdminAtual.id === usuario.id;
+        const avatarHtml = usuario.foto_perfil ? `
+            <div class="w-14 h-14 rounded-full overflow-hidden border-2 border-orange-100 shadow-sm">
+                <img src="${usuario.foto_perfil}" alt="Avatar de ${escapeHtml(usuario.nome)}" class="w-full h-full object-cover" />
+            </div>
+        ` : `
+            <div class="w-14 h-14 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center font-bold text-xl border-2 border-orange-200">
+                ${getInitials(usuario.nome)}
+            </div>
+        `;
         
         html += `
             <div class="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition border-t-4 ${borderColor}">
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div class="flex-1">
-                        <div class="flex flex-wrap items-center gap-2 mb-3">
-                            <h3 class="text-lg font-bold text-gray-800 flex items-center">
-                                <i class="fas fa-user-circle ${iconColor} mr-2 text-xl"></i>
-                                ${escapeHtml(usuario.nome)}
-                                ${isAdminAtual ? '<span class="ml-2 text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">(Você)</span>' : ''}
-                            </h3>
-                            <span class="px-2 py-1 text-xs rounded-full ${tipoBadge}">${tipoTexto}</span>
-                            <span class="px-2 py-1 text-xs rounded-full ${statusCores[usuario.status]}">
-                                <i class="fas ${usuario.status === 'ativo' ? 'fa-check-circle' : usuario.status === 'inativo' ? 'fa-pause-circle' : 'fa-ban'} mr-1"></i>
-                                ${statusTextos[usuario.status]}
-                            </span>
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:gap-4 mb-3">
+                            ${avatarHtml}
+                            <div>
+                                <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                                    ${escapeHtml(usuario.nome)}
+                                    ${isAdminAtual ? '<span class="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">(Você)</span>' : ''}
+                                </h3>
+                                <div class="flex flex-wrap gap-2 mt-2">
+                                    <span class="px-2 py-1 text-xs rounded-full ${tipoBadge}">${tipoTexto}</span>
+                                    <span class="px-2 py-1 text-xs rounded-full ${statusCores[usuario.status]}">
+                                        <i class="fas ${usuario.status === 'ativo' ? 'fa-check-circle' : usuario.status === 'inativo' ? 'fa-pause-circle' : 'fa-ban'} mr-1"></i>
+                                        ${statusTextos[usuario.status]}
+                                    </span>
+                                </div>
+                            </div>
                         </div>
                         
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
@@ -725,7 +891,7 @@ function renderizarUsuarios(usuarios) {
                     </div>
                     
                     <div class="flex items-center space-x-2">
-                        <button onclick='verDetalhes(${JSON.stringify(usuario)})' 
+                        <button onclick="verDetalhes(${usuario.id})" 
                                 class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Ver detalhes">
                             <i class="fas fa-eye"></i>
                         </button>
@@ -783,6 +949,10 @@ function aplicarFiltros() {
             (u.telefone && u.telefone.includes(searchTerm))
         );
     }
+
+    if (mostrarApenasOnline) {
+        filtrados = filtrados.filter(isUsuarioOnline);
+    }
     
     usuariosFiltrados = filtrados;
     renderizarUsuarios(usuariosFiltrados);
@@ -792,6 +962,9 @@ function limparFiltros() {
     document.getElementById('searchInput').value = '';
     document.getElementById('filtroStatus').value = 'todos';
     usuariosFiltrados = [...usuariosData];
+    if (mostrarApenasOnline) {
+        usuariosFiltrados = usuariosFiltrados.filter(isUsuarioOnline);
+    }
     renderizarUsuarios(usuariosFiltrados);
     showToast('info', 'Filtros limpos!');
 }
@@ -875,6 +1048,9 @@ async function carregarUsuarios() {
     await buscarUsuarios();
     usuariosFiltrados = [...usuariosData];
     renderizarUsuarios(usuariosFiltrados);
+
+    const estatisticas = await buscarEstatisticasGerais();
+    atualizarContadoresGerais(estatisticas);
 }
 
 // ============================================

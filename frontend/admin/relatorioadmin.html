@@ -1,116 +1,222 @@
 <!DOCTYPE html>
 <!-- Declaração do tipo de documento HTML5 -->
 <html lang="pt">
-<!-- Início do documento HTML com idioma português -->
+<!-- Início do documento HTML com idioma português de Portugal -->
 
 <head>
-    <!-- CABEÇALHO - Informações técnicas da página -->
+    <!-- ============================================ -->
+    <!-- INFORMAÇÕES BÁSICAS DA PÁGINA -->
+    <!-- ============================================ -->
     <meta charset="UTF-8">
-    <!-- Define a codificação de caracteres como UTF-8 (permite acentos e caracteres especiais) -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Torna a página responsiva em dispositivos móveis -->
+    <!-- Define a codificação de caracteres como UTF-8 (suporta acentos e caracteres especiais) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <!-- Torna a página responsiva em dispositivos móveis, permite zoom e define escala inicial -->
     <title>IPIL - Relatórios e Estatísticas | Sistema de Denúncias</title>
     <!-- Título que aparece na aba do navegador -->
-
-    <!-- BIBLIOTECAS EXTERNAS -->
-    <!-- Tailwind CSS - Framework de estilos utilitário -->
+    
+    <!-- ============================================ -->
+    <!-- BIBLIOTECAS EXTERNAS (CDN) -->
+    <!-- ============================================ -->
+    <!-- Tailwind CSS - Framework de estilos utilitário (facilita a estilização rápida) -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Link para acessar o Tailwind via CDN -->
     
-    <!-- Font Awesome - Biblioteca de ícones -->
+    <!-- Font Awesome - Biblioteca de ícones (fornece ícones como gráfico, pizza, barra, etc.) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Fornece ícones como: gráfico, pizza, barra, etc. -->
     
-    <!-- Google Fonts - Fonte Inter para melhor legibilidade -->
+    <!-- Google Fonts - Fonte Inter (fonte moderna e de fácil leitura) -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Importa a fonte Inter com vários pesos (300 a 800) -->
-
-    <!-- Chart.js - Biblioteca para criação de gráficos -->
+    
+    <!-- Chart.js - Biblioteca para criação de gráficos interativos (linha, pizza, barra, etc.) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Biblioteca JavaScript para criar gráficos interativos -->
-
-    <!-- ESTILOS PERSONALIZADOS -->
+    
+    <!-- html2pdf.js - Biblioteca para converter HTML em PDF e fazer download automático -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <!-- ============================================ -->
+    <!-- ESTILOS PERSONALIZADOS (CSS) -->
+    <!-- ============================================ -->
     <style>
-        /* Aplica a fonte Inter a todos os elementos da página */
+        /* Aplica a fonte Inter a TODOS os elementos da página */
         * {
             font-family: 'Inter', sans-serif;
         }
         
         /* Estilo para links de navegação com animação suave */
         .nav-link {
-            transition: all 0.3s ease; /* Transição suave de 0.3 segundos */
+            transition: all 0.3s ease; /* Transição suave de 0.3 segundos para todas as propriedades */
         }
         
         /* Efeito de levantar ao passar o mouse sobre links de navegação */
         .nav-link:hover {
-            transform: translateY(-2px); /* Move o elemento 2px para cima */
+            transform: translateY(-2px); /* Move o elemento 2 pixels para cima */
         }
         
-        /* Container para gráficos - altura fixa para consistência */
+        /* Container para gráficos - responsivo e com altura mínima */
         .chart-container {
-            position: relative;
-            height: 300px; /* Altura de 300px para o gráfico */
+            position: relative; /* Posicionamento relativo para elementos filhos absolutos */
+            height: auto; /* Altura automática */
+            min-height: 250px; /* Altura mínima de 250 pixels */
             width: 100%; /* Largura total do container pai */
         }
         
-        /* Animação para botões */
+        /* Estilo para botões de download com efeito hover */
         .btn-download {
-            transition: all 0.3s ease;
+            transition: all 0.3s ease; /* Transição suave */
         }
         
+        /* Efeito ao passar o mouse nos botões de download */
         .btn-download:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            transform: translateY(-2px); /* Levanta o botão */
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1); /* Adiciona sombra */
+        }
+        
+        /* Estilo para cards de estatísticas com efeito hover */
+        .stat-card {
+            transition: all 0.3s ease; /* Transição suave */
+        }
+        
+        /* Efeito ao passar o mouse nos cards */
+        .stat-card:hover {
+            transform: translateY(-4px); /* Levanta o card */
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.02); /* Sombra mais pronunciada */
+        }
+        
+        /* Container responsivo para tabela com scroll horizontal */
+        .table-responsive {
+            overflow-x: auto; /* Adiciona scroll horizontal quando necessário */
+            -webkit-overflow-scrolling: touch; /* Scroll suave em dispositivos iOS */
+        }
+        
+        /* Media Query para dispositivos móveis (largura máxima 640px) */
+        @media (max-width: 640px) {
+            /* Reduz altura mínima dos gráficos em mobile */
+            .chart-container {
+                min-height: 200px;
+            }
+        }
+        
+        /* ============================================ */
+        /* ANIMAÇÕES PARA MODAIS E TOASTS */
+        /* ============================================ */
+        
+        /* Animação de fade-in (aparecimento gradual) */
+        @keyframes fadeIn {
+            from { opacity: 0; } /* Começa invisível */
+            to { opacity: 1; } /* Termina totalmente visível */
+        }
+        
+        /* Animação de slide-in (entrada deslizando de cima) */
+        @keyframes slideIn {
+            from { transform: translateY(-50px) scale(0.9); opacity: 0; } /* Começa acima e menor */
+            to { transform: translateY(0) scale(1); opacity: 1; } /* Termina na posição normal */
+        }
+        
+        /* Animação de slide-in pela direita (para toasts) */
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; } /* Começa fora da tela à direita */
+            to { transform: translateX(0); opacity: 1; } /* Termina na posição normal */
+        }
+        
+        /* Classe para aplicar animação de slide-in nos modais */
+        .modal-slide-in {
+            animation: slideIn 0.3s ease;
+        }
+        
+        /* Classe para aplicar animação de slide-in nos toasts */
+        .toast-slide-in {
+            animation: slideInRight 0.3s ease;
+        }
+        
+        /* ============================================ */
+        /* ESTILOS PERSONALIZADOS PARA SCROLLBAR */
+        /* ============================================ */
+        
+        /* Estiliza a barra de rolagem para navegadores WebKit (Chrome, Safari, Edge) */
+        ::-webkit-scrollbar {
+            width: 6px; /* Largura da barra vertical */
+            height: 6px; /* Altura da barra horizontal */
+        }
+        
+        /* Estiliza o fundo da barra de rolagem */
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; /* Fundo cinza claro */
+            border-radius: 10px; /* Bordas arredondadas */
+        }
+        
+        /* Estiliza o "polegar" (parte que se move) da barra de rolagem */
+        ::-webkit-scrollbar-thumb {
+            background: #f97316; /* Cor laranja (igual ao tema) */
+            border-radius: 10px; /* Bordas arredondadas */
+        }
+        
+        /* Efeito hover no polegar da barra de rolagem */
+        ::-webkit-scrollbar-thumb:hover {
+            background: #ea580c; /* Laranja mais escuro */
         }
     </style>
 </head>
 
-<!-- CORPO DA PÁGINA - Tudo que aparece visualmente -->
+<!-- ============================================ -->
+<!-- CORPO DA PÁGINA - Todo conteúdo visual -->
+<!-- ============================================ -->
 <body class="bg-gray-50">
 <!-- bg-gray-50 = fundo cinza muito claro (quase branco) -->
 
     <!-- ============================================ -->
     <!-- NAVBAR SUPERIOR (BARRA DE NAVEGAÇÃO DO TOPO) -->
     <!-- ============================================ -->
-    <!-- fixed = fixa no topo, w-full = largura total, z-50 = sobrepõe outros elementos -->
+    <!-- fixed = fixa no topo, w-full = largura total, z-50 = sobrepõe outros elementos, top-0 = alinhada ao topo -->
     <nav class="bg-white shadow-lg border-b border-gray-200 fixed w-full z-50 top-0">
-        <!-- container = centraliza conteúdo, mx-auto = margem automática nas laterais -->
-        <div class="container mx-auto px-4">
-            <!-- flex = layout flexível, justify-between = espaço entre itens, items-center = centraliza verticalmente -->
-            <div class="flex justify-between items-center h-16"> <!-- h-16 = altura de 64px (4rem) -->
+        <div class="container mx-auto px-3 sm:px-4">
+            <!-- container = centraliza conteúdo, mx-auto = margem automática nas laterais, px-3/4 = padding horizontal responsivo -->
+            <div class="flex justify-between items-center h-14 sm:h-16">
+            <!-- flex = layout flexível, justify-between = espaço entre itens, items-center = centraliza verticalmente, h-14/16 = altura responsiva -->
                 
+                <!-- ============================================ -->
                 <!-- LADO ESQUERDO - Logo e título do sistema -->
-                <div class="flex items-center space-x-3"> <!-- space-x-3 = espaçamento horizontal de 12px -->
+                <!-- ============================================ -->
+                <div class="flex items-center space-x-2 sm:space-x-3">
+                <!-- flex = layout flexível, items-center = alinha verticalmente, space-x = espaçamento horizontal responsivo -->
+                    
                     <!-- Logo IPIL com gradiente (laranja) -->
-                    <div class="bg-gradient-to-r from-orange-600 to-orange-800 text-white text-xl font-bold px-4 py-2 rounded-lg shadow-md">
+                    <div class="bg-gradient-to-r from-orange-600 to-orange-800 text-white text-base sm:text-xl font-bold px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg shadow-md">
                         IPIL
                     </div>
-                    <!-- Título do sistema (visível apenas em desktop) -->
-                    <div class="hidden md:block"> <!-- hidden em mobile, block em desktop (md:block) -->
-                        <span class="text-gray-700 font-semibold">Painel Administrador</span>
+                    <!-- Título do sistema (visível apenas em desktop - md:block significa a partir de 768px) -->
+                    <div class="hidden md:block">
+                        <span class="text-gray-700 font-semibold text-sm lg:text-base">Painel Administrador</span>
                     </div>
                 </div>
 
-                <!-- LADO DIREITO - Ícone de notificações e perfil do usuário -->
-                <div class="flex items-center space-x-4">
-                    <!-- Botão de notificações com contador -->
+                <!-- ============================================ -->
+                <!-- LADO DIREITO - Ícone de notificações e perfil -->
+                <!-- ============================================ -->
+                <div class="flex items-center space-x-2 sm:space-x-4">
+                    
+                    <!-- Botão de notificações com contador (relative permite posicionar o badge) -->
                     <button class="relative text-gray-600 hover:text-orange-600 transition" id="notificacaoBtn">
-                        <!-- relative permite posicionar o badge absoluto -->
-                        <i class="fas fa-bell text-xl"></i> <!-- Ícone de sino do Font Awesome -->
+                        <i class="fas fa-bell text-base sm:text-xl"></i> <!-- Ícone de sino do Font Awesome -->
                         <!-- Badge com número de notificações (posicionado absolutamente) -->
                         <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center hidden" id="contadorNotificacoes">0</span>
                     </button>
                     
                     <!-- Área do perfil do usuário logado -->
-                    <div class="flex items-center space-x-3">
-                        <!-- Nome e tipo de usuário (visível apenas em desktop) -->
-                        <div class="text-right hidden md:block">
-                            <p class="text-sm font-semibold text-gray-800" id="adminNome">Administrador</p>
-                            <p class="text-xs text-gray-500">Super Admin</p>
-                        </div>
-                        <!-- Avatar com iniciais do usuário -->
-                        <div class="w-10 h-10 bg-gradient-to-r from-orange-600 to-orange-800 rounded-full flex items-center justify-center text-white font-bold">
-                            AD <!-- Iniciais do Administrador -->
+                    <div class="relative">
+                        <button id="adminProfileBtn" type="button" class="flex items-center space-x-2 sm:space-x-3 focus:outline-none">
+                            <div class="text-right hidden sm:block">
+                                <p class="text-xs sm:text-sm font-semibold text-gray-800" id="adminNome">Administrador</p>
+                                <p class="text-xs text-gray-500">Super Admin</p>
+                            </div>
+                            <div id="adminAvatar" class="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-orange-600 to-orange-800 rounded-full flex items-center justify-center text-white font-bold text-sm sm:text-base">
+                                AD
+                            </div>
+                            <i class="fas fa-chevron-down text-gray-400 hidden sm:inline-block"></i>
+                        </button>
+                        <div id="adminProfileMenu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-50">
+                            <a href="perfil.html" class="block px-4 py-3 text-sm text-gray-700 hover:bg-orange-50">Meu Perfil</a>
+                            <a href="configuracoes.html" class="block px-4 py-3 text-sm text-gray-700 hover:bg-orange-50">Configurações</a>
+                            <button type="button" onclick="logout()" class="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-orange-50">Sair</button>
                         </div>
                     </div>
                 </div>
@@ -124,74 +230,81 @@
     <!-- ============================================ -->
     <!-- LAYOUT PRINCIPAL (SIDEBAR + CONTEÚDO) -->
     <!-- ============================================ -->
-    <!-- flex = layout flexível, pt-16 = padding top de 64px para compensar navbar fixa -->
-    <div class="flex pt-16">
+    <!-- flex = layout flexível, pt-14/16 = padding top para compensar navbar fixa -->
+    <div class="flex pt-14 sm:pt-16">
         
         <!-- ============================================ -->
         <!-- SIDEBAR - MENU LATERAL (VISÍVEL APENAS EM DESKTOP) -->
         <!-- ============================================ -->
-        <!-- w-64 = largura 256px, fixed = fixa na lateral, hidden lg:block = só aparece em desktop -->
+        <!-- w-64 = largura 256px, fixed = fixa na lateral, hidden lg:block = só aparece em desktop (lg: 1024px+) -->
         <aside class="w-64 bg-white shadow-lg h-screen fixed hidden lg:block overflow-y-auto">
-            <div class="p-6"> <!-- p-6 = padding de 24px em todos os lados -->
+            <div class="p-4 sm:p-6"> <!-- p-4/6 = padding de 16/24px em todos os lados -->
                 
+                <!-- ============================================ -->
                 <!-- MENU PRINCIPAL -->
-                <div class="space-y-2"> <!-- space-y-2 = espaçamento vertical de 8px entre itens -->
-                    <!-- Título da seção (IPIL - Sistema de Denúncias) -->
-                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Menu Principal</p>
+                <!-- ============================================ -->
+                <div class="space-y-1"> <!-- space-y-1 = espaçamento vertical de 4px entre itens -->
+                    <!-- Título da seção -->
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 sm:mb-4">Menu Principal</p>
                     
                     <!-- ITEM 1: Dashboard -->
-                    <a href="dashboardAdmin.html" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-orange-50 hover:text-orange-700 rounded-xl transition nav-link">
-                        <i class="fas fa-tachometer-alt"></i> <!-- Ícone de velocímetro -->
+                    <a href="dashboardAdmin.html" class="flex items-center space-x-3 px-3 sm:px-4 py-2 sm:py-3 text-gray-600 hover:bg-orange-50 hover:text-orange-700 rounded-xl transition nav-link text-sm sm:text-base">
+                        <i class="fas fa-tachometer-alt w-5"></i> <!-- Ícone de velocímetro -->
                         <span>Dashboard</span>
                     </a>
                     
                     <!-- ITEM 2: Denúncias -->
-                    <a href="denunciasadmin.html" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-orange-50 hover:text-orange-700 rounded-xl transition nav-link">
-                        <i class="fas fa-exclamation-triangle"></i> <!-- Ícone de triângulo de alerta -->
+                    <a href="denunciasadmin.html" class="flex items-center space-x-3 px-3 sm:px-4 py-2 sm:py-3 text-gray-600 hover:bg-orange-50 hover:text-orange-700 rounded-xl transition nav-link text-sm sm:text-base">
+                        <i class="fas fa-exclamation-triangle w-5"></i> <!-- Ícone de triângulo de alerta -->
                         <span>Denúncias</span>
+                        <!-- Badge com número de denúncias pendentes -->
                         <span class="ml-auto bg-red-100 text-red-600 text-xs px-2 py-1 rounded-full" id="badgeDenuncias">0</span>
                     </a>
                     
                     <!-- ITEM 3: Reclamações -->
-                    <a href="reclamacoesadmin.html" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-orange-50 hover:text-orange-700 rounded-xl transition nav-link">
-                        <i class="fas fa-flag"></i> <!-- Ícone de bandeira -->
+                    <a href="reclamacoesadmin.html" class="flex items-center space-x-3 px-3 sm:px-4 py-2 sm:py-3 text-gray-600 hover:bg-orange-50 hover:text-orange-700 rounded-xl transition nav-link text-sm sm:text-base">
+                        <i class="fas fa-flag w-5"></i> <!-- Ícone de bandeira -->
                         <span>Reclamações</span>
+                        <!-- Badge com número de reclamações pendentes -->
                         <span class="ml-auto bg-yellow-100 text-yellow-600 text-xs px-2 py-1 rounded-full" id="badgeReclamacoes">0</span>
                     </a>
                     
                     <!-- ITEM 4: Usuários -->
-                    <a href="usuarios.html" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-orange-50 hover:text-orange-700 rounded-xl transition nav-link">
-                        <i class="fas fa-users"></i> <!-- Ícone de usuários -->
+                    <a href="usuarios.html" class="flex items-center space-x-3 px-3 sm:px-4 py-2 sm:py-3 text-gray-600 hover:bg-orange-50 hover:text-orange-700 rounded-xl transition nav-link text-sm sm:text-base">
+                        <i class="fas fa-users w-5"></i> <!-- Ícone de usuários -->
                         <span>Usuários</span>
+                        <!-- Badge com número total de usuários -->
                         <span class="ml-auto bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full" id="badgeUsuarios">0</span>
                     </a>
                     
-                    <!-- ITEM 5: Relatórios - ATIVO (item atual) -->
-                    <a href="#" class="flex items-center space-x-3 px-4 py-3 bg-gradient-to-r from-orange-50 to-orange-100 text-orange-700 rounded-xl font-medium nav-link border-l-4 border-orange-600">
-                        <i class="fas fa-chart-line text-orange-600"></i> <!-- Ícone de gráfico -->
+                    <!-- ITEM 5: Relatórios - ITEM ATIVO (página atual) -->
+                    <a href="#" class="flex items-center space-x-3 px-3 sm:px-4 py-2 sm:py-3 bg-gradient-to-r from-orange-50 to-orange-100 text-orange-700 rounded-xl font-medium nav-link border-l-4 border-orange-600 text-sm sm:text-base">
+                        <i class="fas fa-chart-line text-orange-600 w-5"></i> <!-- Ícone de gráfico de linha -->
                         <span>Relatórios</span>
                     </a>
                 </div>
 
+                <!-- ============================================ -->
                 <!-- MENU SECUNDÁRIO (Configurações) -->
-                <div class="mt-12 pt-6 border-t border-gray-200">
-                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Configurações</p>
+                <!-- ============================================ -->
+                <div class="mt-8 sm:mt-12 pt-4 sm:pt-6 border-t border-gray-200">
+                    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 sm:mb-4">Configurações</p>
                     
                     <!-- Perfil do usuário -->
-                    <a href="perfil.html" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl transition">
-                        <i class="fas fa-user"></i>
+                    <a href="perfil.html" class="flex items-center space-x-3 px-3 sm:px-4 py-2 sm:py-3 text-gray-600 hover:bg-gray-50 rounded-xl transition text-sm sm:text-base">
+                        <i class="fas fa-user w-5"></i> <!-- Ícone de usuário -->
                         <span>Meu Perfil</span>
                     </a>
                     
                     <!-- Configurações do sistema -->
-                    <a href="#" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl transition">
-                        <i class="fas fa-cog"></i>
+                    <a href="configuracoes.html" class="flex items-center space-x-3 px-3 sm:px-4 py-2 sm:py-3 text-gray-600 hover:bg-gray-50 rounded-xl transition text-sm sm:text-base">
+                        <i class="fas fa-cog w-5"></i> <!-- Ícone de engrenagem -->
                         <span>Configurações</span>
                     </a>
                     
-                    <!-- Sair (logout) -->
-                    <a href="#" onclick="logout()" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl transition" id="logoutBtn">
-                        <i class="fas fa-sign-out-alt"></i>
+                    <!-- Sair (logout) - com evento onclick para chamar função JavaScript -->
+                    <a href="#" onclick="logout()" class="flex items-center space-x-3 px-3 sm:px-4 py-2 sm:py-3 text-gray-600 hover:bg-red-50 hover:text-red-600 rounded-xl transition text-sm sm:text-base">
+                        <i class="fas fa-sign-out-alt w-5"></i> <!-- Ícone de saída -->
                         <span>Sair</span>
                     </a>
                 </div>
@@ -204,27 +317,39 @@
         <!-- ============================================ -->
         <!-- NAVEGAÇÃO MOBILE (BARRA INFERIOR PARA CELULAR) -->
         <!-- ============================================ -->
+        <!-- lg:hidden = escondido em desktop, fixed bottom-0 = fixo na parte inferior -->
         <div class="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
-            <div class="grid grid-cols-5 gap-1 p-2">
+            <!-- grid grid-cols-5 = 5 colunas de largura igual -->
+            <div class="grid grid-cols-5 gap-0.5 p-1 sm:p-2">
+                
+                <!-- Ícone 1: Dashboard -->
                 <a href="dashboardAdmin.html" class="flex flex-col items-center py-2 px-1 text-gray-500 hover:text-orange-600 transition">
-                    <i class="fas fa-tachometer-alt text-lg"></i>
-                    <span class="text-xs mt-1">Dashboard</span>
+                    <i class="fas fa-tachometer-alt text-base sm:text-lg"></i>
+                    <span class="text-[10px] sm:text-xs mt-1">Dashboard</span>
                 </a>
+                
+                <!-- Ícone 2: Denúncias -->
                 <a href="denunciasadmin.html" class="flex flex-col items-center py-2 px-1 text-gray-500 hover:text-orange-600 transition">
-                    <i class="fas fa-exclamation-triangle text-lg"></i>
-                    <span class="text-xs mt-1">Denúncias</span>
+                    <i class="fas fa-exclamation-triangle text-base sm:text-lg"></i>
+                    <span class="text-[10px] sm:text-xs mt-1">Denúncias</span>
                 </a>
+                
+                <!-- Ícone 3: Reclamações -->
                 <a href="reclamacoesadmin.html" class="flex flex-col items-center py-2 px-1 text-gray-500 hover:text-orange-600 transition">
-                    <i class="fas fa-flag text-lg"></i>
-                    <span class="text-xs mt-1">Reclamações</span>
+                    <i class="fas fa-flag text-base sm:text-lg"></i>
+                    <span class="text-[10px] sm:text-xs mt-1">Reclamações</span>
                 </a>
+                
+                <!-- Ícone 4: Usuários -->
                 <a href="usuarios.html" class="flex flex-col items-center py-2 px-1 text-gray-500 hover:text-orange-600 transition">
-                    <i class="fas fa-users text-lg"></i>
-                    <span class="text-xs mt-1">Usuários</span>
+                    <i class="fas fa-users text-base sm:text-lg"></i>
+                    <span class="text-[10px] sm:text-xs mt-1">Usuários</span>
                 </a>
+                
+                <!-- Ícone 5: Relatórios - ATIVO (página atual) -->
                 <a href="#" class="flex flex-col items-center py-2 px-1 text-orange-600 bg-orange-50 rounded-lg">
-                    <i class="fas fa-chart-line text-lg"></i>
-                    <span class="text-xs mt-1 font-medium">Relatórios</span>
+                    <i class="fas fa-chart-line text-base sm:text-lg"></i>
+                    <span class="text-[10px] sm:text-xs mt-1 font-medium">Relatórios</span>
                 </a>
             </div>
         </div>
@@ -236,39 +361,44 @@
         <!-- CONTEÚDO PRINCIPAL - RELATÓRIOS E ESTATÍSTICAS -->
         <!-- ============================================ -->
         <div class="flex-1 lg:ml-64">
-            <div class="container mx-auto px-4 py-8 pb-24 lg:pb-8">
+        <!-- flex-1 = ocupa todo espaço restante, lg:ml-64 = margem esquerda de 256px em desktop para compensar sidebar -->
+            <div class="container mx-auto px-3 sm:px-4 py-4 sm:py-8 pb-28 lg:pb-8">
+            <!-- container = centraliza, px-3/4 = padding horizontal, py-4/8 = padding vertical, pb-28 = padding bottom maior em mobile para barra inferior -->
                 
                 <!-- ============================================ -->
                 <!-- BREADCRUMB (CAMINHO DE NAVEGAÇÃO) -->
                 <!-- ============================================ -->
-                <div class="flex items-center text-sm text-gray-500 mb-6">
+                <!-- overflow-x-auto = scroll horizontal se necessário, whitespace-nowrap = impede quebra de linha -->
+                <div class="flex items-center text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6 overflow-x-auto whitespace-nowrap">
                     <a href="dashboardAdmin.html" class="hover:text-orange-600">Admin</a>
-                    <i class="fas fa-chevron-right mx-2 text-xs"></i>
+                    <i class="fas fa-chevron-right mx-1 sm:mx-2 text-[10px] sm:text-xs"></i> <!-- ícone de seta -->
                     <span class="text-orange-600 font-medium">Relatórios e Estatísticas</span>
                 </div>
 
                 <!-- ============================================ -->
                 <!-- CABEÇALHO DA PÁGINA COM BOTÕES DE DOWNLOAD -->
                 <!-- ============================================ -->
-                <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
+                    <!-- Lado esquerdo: título e subtítulo -->
                     <div>
-                        <div class="flex items-center space-x-3 mb-2">
-                            <div class="h-8 w-2 bg-gradient-to-b from-orange-600 to-orange-800 rounded-full"></div>
-                            <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Relatórios e Estatísticas</h1>
+                        <div class="flex items-center space-x-2 sm:space-x-3 mb-1 sm:mb-2">
+                            <!-- Barra decorativa laranja -->
+                            <div class="h-6 sm:h-8 w-1 sm:w-2 bg-gradient-to-b from-orange-600 to-orange-800 rounded-full"></div>
+                            <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800">Relatórios e Estatísticas</h1>
                         </div>
-                        <p class="text-gray-600 ml-5">Análise detalhada do sistema de denúncias e reclamações</p>
+                        <p class="text-gray-600 text-xs sm:text-sm ml-3 sm:ml-5">Análise detalhada do sistema de denúncias e reclamações</p>
                     </div>
                     
-                    <!-- BOTÕES DE DOWNLOAD -->
-                    <div class="flex space-x-3 mt-4 md:mt-0">
-                        <!-- Botão PDF -->
-                        <button id="gerarPDFBtn" class="btn-download flex items-center space-x-2 px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition shadow-md">
-                            <i class="fas fa-file-pdf text-lg"></i>
+                    <!-- Lado direito: BOTÕES DE DOWNLOAD -->
+                    <div class="flex space-x-2 sm:space-x-3">
+                        <!-- Botão PDF - chama função gerarPDF() -->
+                        <button id="gerarPDFBtn" class="btn-download flex items-center space-x-1 sm:space-x-2 px-3 sm:px-5 py-1.5 sm:py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition shadow-md text-xs sm:text-sm">
+                            <i class="fas fa-file-pdf text-sm sm:text-lg"></i> <!-- Ícone PDF -->
                             <span class="font-medium">PDF</span>
                         </button>
-                        <!-- Botão Excel -->
-                        <button id="gerarExcelBtn" class="btn-download flex items-center space-x-2 px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-md">
-                            <i class="fas fa-file-excel text-lg"></i>
+                        <!-- Botão Excel - chama função gerarExcel() -->
+                        <button id="gerarExcelBtn" class="btn-download flex items-center space-x-1 sm:space-x-2 px-3 sm:px-5 py-1.5 sm:py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-md text-xs sm:text-sm">
+                            <i class="fas fa-file-excel text-sm sm:text-lg"></i> <!-- Ícone Excel -->
                             <span class="font-medium">Excel</span>
                         </button>
                     </div>
@@ -277,92 +407,98 @@
                 <!-- ============================================ -->
                 <!-- CARDS DE ESTATÍSTICAS RÁPIDAS (KPI's) -->
                 <!-- ============================================ -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8" id="cardsEstatisticas">
+                <!-- grid responsivo: 1 coluna mobile, 2 colunas tablet, 3 colunas desktop -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8" id="cardsEstatisticas">
                     <!-- Os cards serão preenchidos dinamicamente pelo JavaScript -->
                 </div>
 
                 <!-- ============================================ -->
-                <!-- GRÁFICOS - 2 COLUNAS -->
+                <!-- GRÁFICOS - Layout de 2 colunas -->
                 <!-- ============================================ -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-6 sm:mb-8">
                     
                     <!-- ============================================ -->
-                    <!-- GRÁFICO 1: Fluxo de Denúncias e Reclamações -->
+                    <!-- GRÁFICO 1: Fluxo de Denúncias e Reclamações (Linha) -->
                     <!-- ============================================ -->
-                    <div class="bg-white rounded-xl shadow-md p-6">
-                        <div class="flex justify-between items-center mb-6">
+                    <div class="bg-white rounded-xl shadow-md p-4 sm:p-6">
+                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4 sm:mb-6">
                             <div>
-                                <h3 class="text-lg font-bold text-gray-800">Sistema de Gestão de Denúncias e Reclamações</h3>
-                                <p class="text-xs text-gray-500 mt-1">Fluxo por estágio</p>
+                                <h3 class="text-base sm:text-lg font-bold text-gray-800">Fluxo de Denúncias e Reclamações</h3>
+                                <p class="text-xs text-gray-500 mt-1">Por estágio de processamento</p>
                             </div>
-                            <div class="bg-orange-100 p-2 rounded-lg">
-                                <i class="fas fa-chart-line text-orange-600"></i>
+                            <!-- Ícone decorativo -->
+                            <div class="bg-orange-100 p-2 rounded-lg w-fit">
+                                <i class="fas fa-chart-line text-orange-600 text-base sm:text-xl"></i>
                             </div>
                         </div>
-                        
+                        <!-- Container para o canvas do gráfico de linha -->
                         <div class="chart-container">
-                            <canvas id="lineChart"></canvas>
+                            <canvas id="lineChart" style="max-height: 280px;"></canvas>
+                            <!-- Canvas onde o Chart.js renderizará o gráfico de linha -->
                         </div>
                     </div>
 
                     <!-- ============================================ -->
                     <!-- GRÁFICO 2: Distribuição por Categoria (Pizza) -->
                     <!-- ============================================ -->
-                    <div class="bg-white rounded-xl shadow-md p-6">
-                        <div class="flex justify-between items-center mb-6">
+                    <div class="bg-white rounded-xl shadow-md p-4 sm:p-6">
+                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4 sm:mb-6">
                             <div>
-                                <h3 class="text-lg font-bold text-gray-800">Distribuição por Categoria</h3>
+                                <h3 class="text-base sm:text-lg font-bold text-gray-800">Distribuição por Categoria</h3>
                                 <p class="text-xs text-gray-500 mt-1">Denúncias e Reclamações por setor</p>
                             </div>
-                            <div class="bg-orange-100 p-2 rounded-lg">
-                                <i class="fas fa-chart-pie text-orange-600"></i>
+                            <div class="bg-orange-100 p-2 rounded-lg w-fit">
+                                <i class="fas fa-chart-pie text-orange-600 text-base sm:text-xl"></i> <!-- Ícone pizza -->
                             </div>
                         </div>
-                        
-                        <div class="chart-container">
-                            <canvas id="pieChart"></canvas>
+                        <!-- Container para o canvas do gráfico de pizza -->
+                        <div class="chart-container flex flex-col items-center">
+                            <canvas id="pieChart" style="max-width: 300px; max-height: 280px; margin: 0 auto;"></canvas>
+                            <!-- Canvas onde o Chart.js renderizará o gráfico de pizza -->
                         </div>
                         
-                        <!-- Legenda do gráfico pizza -->
-                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6 pt-4 border-t border-gray-100" id="pieLegend">
-                            <!-- Legenda será preenchida dinamicamente -->
-                        </div>
+                        <!-- Legenda do gráfico pizza (será preenchida dinamicamente) -->
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-gray-100" id="pieLegend"></div>
                     </div>
                 </div>
 
                 <!-- ============================================ -->
                 <!-- TABELA DE DISTRIBUIÇÃO POR CATEGORIA -->
                 <!-- ============================================ -->
-                <div class="bg-white rounded-xl shadow-md overflow-hidden mb-8">
-                    <div class="px-6 py-4 bg-gradient-to-r from-orange-600 to-orange-800 flex justify-between items-center">
-                        <h3 class="text-lg font-bold text-white">Distribuição por Categoria</h3>
-                        <div class="flex space-x-2">
-                            <button onclick="gerarPDF()" class="text-white hover:text-orange-200 transition text-sm flex items-center space-x-1">
+                <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6 sm:mb-8">
+                    <!-- Cabeçalho da tabela com gradiente laranja -->
+                    <div class="px-4 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-orange-600 to-orange-800 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+                        <h3 class="text-base sm:text-lg font-bold text-white">Distribuição por Categoria</h3>
+                        <!-- Botões de download dentro da tabela -->
+                        <div class="flex space-x-3">
+                            <button onclick="gerarPDF()" class="text-white hover:text-orange-200 transition text-xs sm:text-sm flex items-center space-x-1">
                                 <i class="fas fa-file-pdf"></i>
                                 <span>PDF</span>
                             </button>
-                            <button onclick="gerarExcel()" class="text-white hover:text-orange-200 transition text-sm flex items-center space-x-1">
+                            <button onclick="gerarExcel()" class="text-white hover:text-orange-200 transition text-xs sm:text-sm flex items-center space-x-1">
                                 <i class="fas fa-file-excel"></i>
                                 <span>Excel</span>
                             </button>
                         </div>
                     </div>
                     
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200" id="tabelaCategorias">
+                    <!-- Tabela com scroll horizontal para mobile -->
+                    <div class="table-responsive overflow-x-auto">
+                        <table class="min-w-[600px] sm:min-w-full divide-y divide-gray-200">
+                            <!-- min-w-[600px] garante largura mínima para mobile, sm:min-w-full = largura total em desktop -->
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoria</th>
-                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Denúncias</th>
-                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Reclamações</th>
-                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                                    <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Percentual</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gráfico</th>
+                                    <!-- Cabeçalhos das colunas da tabela -->
+                                    <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoria</th>
+                                    <th class="px-3 sm:px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Denúncias</th>
+                                    <th class="px-3 sm:px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Reclamações</th>
+                                    <th class="px-3 sm:px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                                    <th class="px-3 sm:px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Percentual</th>
+                                    <th class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Gráfico</th>
                                 </tr>
                             </thead>
-                            <tbody class="bg-white divide-y divide-gray-200" id="tabelaCategoriasBody">
-                                <!-- Corpo da tabela será preenchido dinamicamente -->
-                            </tbody>
+                            <!-- Corpo da tabela (será preenchido dinamicamente pelo JavaScript) -->
+                            <tbody class="bg-white divide-y divide-gray-200" id="tabelaCategoriasBody"></tbody>
                         </table>
                     </div>
                 </div>
@@ -370,9 +506,9 @@
                 <!-- ============================================ -->
                 <!-- RODAPÉ (FOOTER) -->
                 <!-- ============================================ -->
-                <footer class="mt-12 text-center text-gray-500 text-sm">
+                <footer class="mt-8 sm:mt-12 text-center text-gray-500 text-xs sm:text-sm">
                     <p>© 2026 Instituto Politécnico Industrial de Luanda - IPIL</p>
-                    <p class="text-xs mt-1">Sistema de Gestão de Denúncias e Reclamações</p>
+                    <p class="text-[10px] sm:text-xs mt-1">Sistema de Gestão de Denúncias e Reclamações</p>
                 </footer>
             </div>
         </div>
@@ -385,11 +521,11 @@
     <!-- ============================================ -->
 
     <!-- ============================================ -->
-    <!-- SCRIPTS -->
+    <!-- SCRIPTS (JavaScript) -->
     <!-- ============================================ -->
     <script src="relatorioadmin.js"></script>
-    
-    
+    <script src="admin-dropdown.js"></script>
+    <!-- Arquivo JavaScript externo contendo toda a lógica da página -->
     
 </body>
 </html>

@@ -35,18 +35,77 @@ function atualizarInterface() {
     document.getElementById('processoMobile').textContent = `Processo: ${usuarioLogado.numero_processo}`;
 }
 
-// ============================================
-// FUNÇÃO PARA VALIDAR DATA (NÃO ULTRAPASSAR 2026)
-// ============================================
+// -----------------------------
+// Contadores dinâmicos (reclamações/denúncias)
+// -----------------------------
+let intervaloAtualizacaoContadores = null;
+async function carregarContadoresDinamicos() {
+    if (!usuarioLogado) return { totalReclamacoes: 0, totalDenuncias: 0 };
+    try {
+        const [respRec, respDen] = await Promise.all([
+            fetch(`${API_URL}/reclamacoes?usuario_id=${usuarioLogado.id}`),
+            fetch(`${API_URL}/denuncias?usuario_id=${usuarioLogado.id}`)
+        ]);
+
+        const recData = respRec.ok ? await respRec.json() : [];
+        const denData = respDen.ok ? await respDen.json() : [];
+
+        const totalReclamacoes = Array.isArray(recData) ? recData.length : 0;
+        const totalDenuncias = Array.isArray(denData) ? denData.length : 0;
+
+        const reclamacoesEl = document.getElementById('reclamacoesCount');
+        const denunciasEl = document.getElementById('denunciasCount');
+
+        if (reclamacoesEl) {
+            reclamacoesEl.textContent = totalReclamacoes;
+            reclamacoesEl.style.display = totalReclamacoes > 0 ? 'inline-flex' : 'none';
+        }
+
+        if (denunciasEl) {
+            denunciasEl.textContent = totalDenuncias;
+            denunciasEl.style.display = totalDenuncias > 0 ? 'inline-flex' : 'none';
+        }
+
+        // notification badge: use number of reclamações abertas
+        const reclamacoesAbertas = Array.isArray(recData) ? recData.filter(r => r.status === 'aberta' || r.status === 'em_andamento').length : 0;
+        const notificationBadge = document.getElementById('notificationBadge');
+        if (notificationBadge) {
+            if (reclamacoesAbertas > 0) {
+                notificationBadge.textContent = reclamacoesAbertas;
+                notificationBadge.classList.remove('hidden');
+            } else {
+                notificationBadge.classList.add('hidden');
+            }
+        }
+
+        return { totalReclamacoes, totalDenuncias, reclamacoesAbertas };
+    } catch (err) {
+        console.error('Erro ao carregar contadores:', err);
+        return { totalReclamacoes: 0, totalDenuncias: 0, reclamacoesAbertas: 0 };
+    }
+}
+
+function iniciarAtualizacaoPeriodicaContadores() {
+    if (intervaloAtualizacaoContadores) clearInterval(intervaloAtualizacaoContadores);
+    intervaloAtualizacaoContadores = setInterval(async () => {
+        await carregarContadoresDinamicos();
+        console.log('🔄 Contadores atualizados (nova submissão)');
+    }, 30000);
+}
+
+// FUNÇÃO PARA VALIDAR DATA (NÃO ULTRAPASSAR 2026 E NÃO SER FUTURA)
 function validarDataLimite(dataString) {
     if (!dataString) return false;
     
     const dataSelecionada = new Date(dataString);
     const anoLimite = 2026;
     const dataLimite = new Date(`${anoLimite}-12-31`);
+    const dataHoje = new Date();
+    dataHoje.setHours(23, 59, 59, 999);
     
     if (isNaN(dataSelecionada.getTime())) return false;
     if (dataSelecionada > dataLimite) return false;
+    if (dataSelecionada > dataHoje) return false;
     
     return true;
 }
@@ -56,11 +115,15 @@ function configurarValidacaoData() {
     const inputData = document.getElementById('dataOcorrido');
     if (!inputData) return;
     
-    inputData.max = '2026-12-31';
+    const hoje = new Date();
+    const dataLimite = new Date('2026-12-31');
+    const maxData = hoje <= dataLimite ? hoje : dataLimite;
+    inputData.max = maxData.toISOString().split('T')[0];
+    inputData.min = '2000-01-01';
     
     inputData.addEventListener('change', function() {
         if (this.value && !validarDataLimite(this.value)) {
-            mostrarNotificacao('A data do ocorrido não pode ultrapassar o ano de 2026!', 'error');
+            mostrarNotificacao('A data do ocorrido deve ser realista e não pode ser futura ou posterior a 2026.', 'error');
             this.value = '';
             this.classList.add('border-red-500', 'bg-red-50');
         } else if (this.value) {
@@ -74,7 +137,7 @@ function configurarValidacaoData() {
     
     inputData.addEventListener('input', function() {
         if (this.value && !validarDataLimite(this.value)) {
-            this.setCustomValidity('A data não pode ser superior a 2026');
+            this.setCustomValidity('A data deve ser realista e não pode ser futura ou superior a 2026.');
             this.classList.add('border-red-500', 'bg-red-50');
         } else {
             this.setCustomValidity('');
@@ -83,9 +146,7 @@ function configurarValidacaoData() {
     });
 }
 
-// ============================================
 // FUNÇÃO PARA CONVERTER ARQUIVOS PARA BASE64
-// ============================================
 async function converterArquivosParaBase64(files) {
     const arquivosConvertidos = [];
     
@@ -113,9 +174,7 @@ async function converterArquivosParaBase64(files) {
     return arquivosConvertidos;
 }
 
-// ============================================
 // FUNÇÃO PARA ENVIAR ARQUIVOS PARA O SERVIDOR
-// ============================================
 async function enviarAnexos(anexos, denunciaId = null, reclamacaoId = null) {
     if (!anexos || anexos.length === 0) return [];
     
@@ -123,22 +182,24 @@ async function enviarAnexos(anexos, denunciaId = null, reclamacaoId = null) {
     
     for (const anexo of anexos) {
         try {
-            let url = `${API_URL}/anexos`;
-            if (denunciaId) {
-                url += `?denuncia_id=${denunciaId}`;
-            } else if (reclamacaoId) {
-                url += `?reclamacao_id=${reclamacaoId}`;
-            }
+            const payload = {
+                ...anexo,
+                denuncia_id: denunciaId || null,
+                reclamacao_id: reclamacaoId || null
+            };
             
-            const response = await fetch(url, {
+            const response = await fetch(`${API_URL}/anexos`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(anexo)
+                body: JSON.stringify(payload)
             });
             
             if (response.ok) {
                 const resultado = await response.json();
                 anexosEnviados.push(resultado);
+            } else {
+                const errorData = await response.json();
+                console.error('Erro ao enviar anexo:', errorData);
             }
         } catch (error) {
             console.error('Erro ao enviar anexo:', error);
@@ -178,7 +239,7 @@ function switchTab(type) {
 // Função para enviar denúncia COM ANEXOS (sem anônimo)
 async function enviarDenuncia(dados, anexos) {
     try {
-        console.log('🚀 Enviando denúncia:', dados);
+        console.log(' Enviando denúncia:', dados);
         
         const response = await fetch(`${API_URL}/denuncias`, {
             method: 'POST',
@@ -201,7 +262,7 @@ async function enviarDenuncia(dados, anexos) {
         
         return { success: true, data: resultado };
     } catch (error) {
-        console.error('❌ Erro ao enviar denúncia:', error);
+        console.error(' Erro ao enviar denúncia:', error);
         return { success: false, error: error.message };
     }
 }
@@ -209,7 +270,7 @@ async function enviarDenuncia(dados, anexos) {
 // Função para enviar reclamação COM ANEXOS (sem anônimo)
 async function enviarReclamacao(dados, anexos) {
     try {
-        console.log('🚀 Enviando reclamação:', dados);
+        console.log(' Enviando reclamação:', dados);
         
         const response = await fetch(`${API_URL}/reclamacoes`, {
             method: 'POST',
@@ -218,7 +279,7 @@ async function enviarReclamacao(dados, anexos) {
         });
         
         const resultado = await response.json();
-        console.log('📡 Resposta do servidor:', resultado);
+        console.log(' Resposta do servidor:', resultado);
         
         if (!response.ok) {
             throw new Error(resultado.error || 'Erro ao enviar reclamação');
@@ -232,14 +293,12 @@ async function enviarReclamacao(dados, anexos) {
         
         return { success: true, data: resultado };
     } catch (error) {
-        console.error('❌ Erro ao enviar reclamação:', error);
+        console.error(' Erro ao enviar reclamação:', error);
         return { success: false, error: error.message };
     }
 }
 
-// ============================================
 // FUNÇÃO PARA MOSTRAR LOADING
-// ============================================
 function mostrarLoading(show, message = 'Processando...') {
     let overlay = document.getElementById('loadingOverlay');
     
@@ -311,9 +370,9 @@ document.getElementById('submissionForm').addEventListener('submit', async funct
         created_at: new Date().toISOString()
     };
     
-    console.log('📋 Dados base:', dadosBase);
-    console.log('👤 Usuário logado ID:', usuarioLogado.id);
-    console.log('📎 Arquivos anexados:', filesArray.length);
+    console.log(' Dados base:', dadosBase);
+    console.log(' Usuário logado ID:', usuarioLogado.id);
+    console.log(' Arquivos anexados:', filesArray.length);
     
     // Mostrar loading
     mostrarLoading(true, `Enviando ${tipo.toLowerCase()}...`);
@@ -329,7 +388,7 @@ document.getElementById('submissionForm').addEventListener('submit', async funct
     if (filesArray.length > 0) {
         mostrarLoading(true, `Convertendo ${filesArray.length} arquivo(s)...`);
         anexosBase64 = await converterArquivosParaBase64(filesArray);
-        console.log(`✅ ${anexosBase64.length} arquivo(s) convertidos para Base64`);
+        console.log(` ${anexosBase64.length} arquivo(s) convertidos para Base64`);
     }
     
     let resultado;
@@ -572,10 +631,13 @@ function logout() {
 }
 
 // Inicialização
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     usuarioLogado = checkAuth();
     if (!usuarioLogado) return;
     atualizarInterface();
+    // carregar contadores e iniciar atualização periódica
+    await carregarContadoresDinamicos();
+    iniciarAtualizacaoPeriodicaContadores();
     switchTab('denuncia');
     configurarValidacaoData();
 });
