@@ -32,14 +32,17 @@ app.use((req, res, next) => {
     next();
 });
 
-// Servir arquivos estáticos (front-end)
-app.use(express.static(path.join(__dirname, '../')));
-
 // Rotas da API
 app.use('/api/denuncias', denunciasRoutes);
 app.use('/api/reclamacoes', reclamacoesRoutes);
 app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/anexos', anexosRoutes);
+// Configurações do sistema (salva em arquivo local se o backend estiver ativo)
+const configuracoesRoutes = require('./modules/configuracoes');
+app.use('/api/configuracoes', configuracoesRoutes);
+
+// Servir arquivos estáticos (front-end)
+app.use(express.static(path.join(__dirname, '../')));
 
 // Rota de teste
 app.get('/', (req, res) => {
@@ -48,13 +51,14 @@ app.get('/', (req, res) => {
         status: 'online',
         version: '1.0.0',
         endpoints: {
-            usuarios: '/api/usuarios',
-            denuncias: '/api/denuncias',
-            reclamacoes: '/api/reclamacoes',
-            anexos: '/api/anexos',
-            health: '/health'
-        }
-    });
+                usuarios: '/api/usuarios',
+                denuncias: '/api/denuncias',
+                reclamacoes: '/api/reclamacoes',
+                anexos: '/api/anexos',
+                configuracoes: '/api/configuracoes',
+                health: '/health'
+            }
+        });
 });
 
 // Rota de health check

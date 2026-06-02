@@ -40,7 +40,7 @@ function atualizarAvatarGlobal() {
 
     const fotoPerfil = usuario.foto_perfil || usuario.fotoPerfil || '';
     const initials = getInitials(usuario.nome);
-    const avatarIds = ['usuarioAvatar', 'avatarMobile'];
+    const avatarIds = ['usuarioAvatar', 'avatarMobile', 'adminAvatar', 'profileImage'];
 
     avatarIds.forEach(id => {
         const element = document.getElementById(id);
@@ -141,6 +141,7 @@ function closeProfileImageModal() {
     }
 }
 
+window.getInitials = getInitials;
 window.atualizarAvatarGlobal = atualizarAvatarGlobal;
 window.abrirModalImagemPerfil = openProfileImageModal;
 window.fecharModalImagemPerfil = closeProfileImageModal;

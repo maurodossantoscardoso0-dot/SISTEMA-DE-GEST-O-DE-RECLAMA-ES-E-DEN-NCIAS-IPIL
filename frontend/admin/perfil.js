@@ -2,6 +2,18 @@
 
 let usuarioAtual = null;
 
+// Detectar backend local quando a página estiver sendo servida por Live Server
+const API_BASE = (location.hostname === 'localhost' && location.port && location.port !== '3000') ? 'http://localhost:3000' : '';
+function apiUrl(path) { return (API_BASE ? API_BASE : '') + path; }
+
+function obterIniciaisNomeCompleto(nome) {
+    if (!nome) return 'AD';
+    const partes = nome.trim().split(/\s+/).filter(Boolean);
+    if (partes.length === 0) return 'AD';
+    if (partes.length === 1) return partes[0].substring(0, 2).toUpperCase();
+    return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
+}
+
 // ============================================
 // VERIFICAR ADMIN (NÃO PODE SER EXCLUÍDO)
 // ============================================
@@ -33,11 +45,11 @@ async function carregarPerfil() {
         console.log('🔄 Carregando perfil do administrador...');
         
         // Buscar dados atualizados do usuário no servidor
-        const response = await fetch(`http://localhost:3000/api/usuarios/${usuarioAtual.id}`);
+        const response = await fetch(apiUrl(`/api/usuarios/${usuarioAtual.id}`));
         
         if (response.ok) {
-            const usuarioAtualizado = await response.json();
-            usuarioAtual = usuarioAtualizado;
+            const body = await response.json();
+            usuarioAtual = (body && body.data) ? body.data : body;
             // Atualizar sessionStorage
             sessionStorage.setItem('usuarioLogado', JSON.stringify(usuarioAtual));
         }
@@ -103,7 +115,7 @@ function atualizarNavbar() {
     
     const nome = usuarioAtual.nome || 'Administrador';
     const primeiroNome = nome.split(' ')[0];
-    const iniciais = nome.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    const iniciais = obterIniciaisNomeCompleto(nome);
     
     // Nome do usuário na navbar
     const usuarioNomeSpan = document.getElementById('usuarioNome');
@@ -132,7 +144,7 @@ function atualizarNavbar() {
 // ATUALIZAR AVATAR
 // ============================================
 function atualizarAvatar(nome) {
-    const iniciais = nome.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    const iniciais = obterIniciaisNomeCompleto(nome);
     
     const profileImage = document.getElementById('profileImage');
     if (profileImage) {
@@ -166,7 +178,7 @@ async function salvarPerfil(event) {
         id: usuarioAtual.id,
         nome: nome,
         telefone: document.getElementById('telefone').value,
-        dataNascimento: document.getElementById('dataNascimento').value,
+        ano_nascimento: document.getElementById('dataNascimento').value,
         sexo: document.getElementById('sexo').value,
         curso: document.getElementById('curso').value,
         classe: document.getElementById('classe').value,
@@ -179,7 +191,7 @@ async function salvarPerfil(event) {
     try {
         showToast('info', 'Salvando alterações...');
         
-        const response = await fetch(`http://localhost:3000/api/usuarios/${usuarioAtual.id}`, {
+        const response = await fetch(apiUrl(`/api/usuarios/${usuarioAtual.id}`), {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(dadosAtualizados)
@@ -232,7 +244,7 @@ async function alterarSenha() {
         showToast('info', 'Verificando senha atual...');
         
         // Verificar senha atual
-        const loginResponse = await fetch('http://localhost:3000/api/usuarios/login', {
+        const loginResponse = await fetch(apiUrl('/api/usuarios/login'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -247,7 +259,7 @@ async function alterarSenha() {
         }
         
         // Atualizar senha
-        const response = await fetch(`http://localhost:3000/api/usuarios/${usuarioAtual.id}/senha`, {
+        const response = await fetch(apiUrl(`/api/usuarios/${usuarioAtual.id}/senha`), {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ senha: novaSenha })
@@ -315,50 +327,189 @@ function setupPhotoUpload() {
     const profilePreview = document.getElementById('profilePreview');
     const removePhotoBtn = document.getElementById('removePhoto');
     
+    const MAX_MB = 5;
+
     // Verificar se já existe foto salva
-    const fotoSalva = localStorage.getItem(`foto_admin_${usuarioAtual?.id}`);
+    const fotoSalva = usuarioAtual?.foto_perfil || localStorage.getItem(`foto_admin_${usuarioAtual?.id}`);
     if (fotoSalva) {
         profilePreview.src = fotoSalva;
         profilePreview.classList.remove('hidden');
         profileImage.classList.add('hidden');
         if (removePhotoBtn) removePhotoBtn.classList.remove('hidden');
     }
-    
+
     if (photoInput) {
         photoInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
-            if (file && file.type.startsWith('image/')) {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    const imageUrl = event.target.result;
-                    profilePreview.src = imageUrl;
+            if (!file) return;
+
+            if (!file.type.startsWith('image/')) {
+                showToast('error', 'Por favor, selecione um arquivo de imagem válido');
+                return;
+            }
+
+            if (file.size > MAX_MB * 1024 * 1024) {
+                showToast('error', `A imagem é muito grande. Tamanho máximo: ${MAX_MB} MB`);
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const imageUrl = event.target.result;
+
+                // Redimensionar a imagem para evitar uploads muito grandes
+                const img = new Image();
+                img.onload = function() {
+                    const maxDim = 1024;
+                    let w = img.width;
+                    let h = img.height;
+                    if (w > maxDim || h > maxDim) {
+                        const ratio = Math.min(maxDim / w, maxDim / h);
+                        w = Math.round(w * ratio);
+                        h = Math.round(h * ratio);
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = w;
+                    canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+                    const resizedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+                    profilePreview.src = resizedDataUrl;
                     profilePreview.classList.remove('hidden');
                     profileImage.classList.add('hidden');
-                    
-                    // Salvar no localStorage
-                    localStorage.setItem(`foto_admin_${usuarioAtual?.id}`, imageUrl);
-                    
-                    if (removePhotoBtn) removePhotoBtn.classList.remove('hidden');
-                    showToast('success', 'Foto atualizada com sucesso!');
+
+                    // Enviar para o backend e atualizar session/local
+                    salvarFotoNoServidor(resizedDataUrl).then(result => {
+                        if (result && result.success) {
+                            if (removePhotoBtn) removePhotoBtn.classList.remove('hidden');
+                            showToast('success', 'Foto atualizada com sucesso!');
+                        } else {
+                            // Fallback local
+                            localStorage.setItem(`foto_admin_${usuarioAtual?.id}`, resizedDataUrl);
+                            if (removePhotoBtn) removePhotoBtn.classList.remove('hidden');
+                            const msg = result && result.error ? result.error : 'Foto atualizada localmente (servidor indisponível)';
+                            showToast('warning', msg);
+                        }
+                    });
                 };
-                reader.readAsDataURL(file);
-            } else {
-                showToast('error', 'Por favor, selecione um arquivo de imagem válido');
-            }
+                img.onerror = function() {
+                    showToast('error', 'Não foi possível processar a imagem selecionada');
+                };
+                img.src = imageUrl;
+            };
+            reader.readAsDataURL(file);
         });
     }
-    
+
     if (removePhotoBtn) {
         removePhotoBtn.addEventListener('click', function() {
             profilePreview.src = '#';
             profilePreview.classList.add('hidden');
             profileImage.classList.remove('hidden');
             photoInput.value = '';
-            localStorage.removeItem(`foto_admin_${usuarioAtual?.id}`);
+            // Remover no servidor se possível
+            fetch(apiUrl(`/api/usuarios/${usuarioAtual.id}`), {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ foto_perfil: null })
+            }).then(res => {
+                if (res.ok) {
+                    usuarioAtual.foto_perfil = null;
+                    sessionStorage.setItem('usuarioLogado', JSON.stringify(usuarioAtual));
+                    showToast('success', 'Foto removida com sucesso');
+                } else {
+                    localStorage.removeItem(`foto_admin_${usuarioAtual?.id}`);
+                    showToast('warning', 'Foto removida localmente');
+                }
+            }).catch(() => {
+                localStorage.removeItem(`foto_admin_${usuarioAtual?.id}`);
+                showToast('warning', 'Foto removida localmente');
+            });
             removePhotoBtn.classList.add('hidden');
-            showToast('info', 'Foto removida com sucesso');
         });
     }
+}
+
+// Função auxiliar para salvar foto no servidor
+async function salvarFotoNoServidor(base64Image) {
+    if (!usuarioAtual || !usuarioAtual.id) return false;
+    try {
+        // Função auxiliar para tentar enviar e retornar { ok, status, body }
+        async function trySend(payload) {
+            const r = await fetch(apiUrl(`/api/usuarios/${usuarioAtual.id}`), {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ foto_perfil: payload })
+            });
+            let json = null;
+            try { json = await r.json(); } catch(e) { json = null; }
+            return { ok: r.ok, status: r.status, body: json };
+        }
+
+        // Tenta enviar a imagem original
+        console.debug('salvarFotoNoServidor: tentando enviar imagem original (comprimento:', base64Image.length, ')');
+        let attempt = await trySend(base64Image);
+        console.debug('salvarFotoNoServidor: resposta tentativa original', attempt);
+        if (attempt.ok) {
+            usuarioAtual = attempt.body?.data || attempt.body || usuarioAtual;
+            sessionStorage.setItem('usuarioLogado', JSON.stringify(usuarioAtual));
+            // remover fallback local caso exista
+            try { localStorage.removeItem(`foto_admin_${usuarioAtual?.id}`); } catch(e){}
+            return { success: true };
+        }
+
+        // Se o servidor rejeitou por tamanho, tentar recomprimir/reduzir e reenviar
+        const serverMessage = attempt.body?.error || '';
+        if (attempt.status === 400 && serverMessage && serverMessage.toLowerCase().includes('maximo')) {
+            // tenta reduzir qualidade/dimensão progressivamente
+            const compressOptions = [ {maxDim:800, quality:0.75}, {maxDim:600, quality:0.6}, {maxDim:400, quality:0.5} ];
+            for (const opt of compressOptions) {
+                const compressed = await compressDataUrl(base64Image, opt.maxDim, opt.quality);
+                console.debug('salvarFotoNoServidor: tentando recomprimir para', opt, 'comprimento:', compressed.length);
+                const retry = await trySend(compressed);
+                console.debug('salvarFotoNoServidor: resposta retry', retry);
+                if (retry.ok) {
+                    usuarioAtual = retry.body?.data || retry.body || usuarioAtual;
+                    sessionStorage.setItem('usuarioLogado', JSON.stringify(usuarioAtual));
+                    try { localStorage.removeItem(`foto_admin_${usuarioAtual?.id}`); } catch(e){}
+                    return { success: true };
+                }
+            }
+        }
+
+        // Não foi possível salvar no servidor
+        console.warn('salvarFotoNoServidor: falha final ao salvar foto no servidor:', attempt.status, attempt.body || serverMessage);
+        return { success: false, error: attempt.body?.error || serverMessage || 'Falha ao salvar foto no servidor' };
+    } catch (error) {
+        console.error('Erro ao salvar foto no servidor:', error);
+        return { success: false, error: error.message || 'Erro ao salvar foto no servidor' };
+    }
+}
+
+// Compress a dataURL by drawing into canvas with given max dimension and quality
+async function compressDataUrl(dataUrl, maxDim, quality) {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = function() {
+            let w = img.width;
+            let h = img.height;
+            if (w > maxDim || h > maxDim) {
+                const ratio = Math.min(maxDim / w, maxDim / h);
+                w = Math.round(w * ratio);
+                h = Math.round(h * ratio);
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            const out = canvas.toDataURL('image/jpeg', quality);
+            resolve(out);
+        };
+        img.onerror = function(e) { reject(e); };
+        img.src = dataUrl;
+    });
 }
 
 // ============================================
@@ -499,12 +650,19 @@ function logout() {
 async function carregarEstatisticas() {
     try {
         // Buscar denúncias do admin (todas)
-        const denunciasResponse = await fetch('http://localhost:3000/api/denuncias');
-        const denuncias = await denunciasResponse.json();
+        const denunciasResponse = await fetch(apiUrl('/api/denuncias'));
+        const denunciasBody = await denunciasResponse.json();
+        const denuncias = Array.isArray(denunciasBody) ? denunciasBody : (denunciasBody.data || []);
         
         // Buscar reclamações do admin (todas)
-        const reclamacoesResponse = await fetch('http://localhost:3000/api/reclamacoes');
-        const reclamacoes = await reclamacoesResponse.json();
+        const reclamacoesResponse = await fetch(apiUrl('/api/reclamacoes'));
+        const reclamacoesBody = await reclamacoesResponse.json();
+        const reclamacoes = Array.isArray(reclamacoesBody) ? reclamacoesBody : (reclamacoesBody.data || []);
+        
+        // Buscar usuários
+        const usuariosResponse = await fetch(apiUrl('/api/usuarios'));
+        const usuariosBody = await usuariosResponse.json();
+        const usuarios = Array.isArray(usuariosBody) ? usuariosBody : (usuariosBody.data || []);
         
         // Atualizar badges
         const denunciasCount = document.getElementById('denunciasCount');
@@ -513,9 +671,17 @@ async function carregarEstatisticas() {
         const reclamacoesCount = document.getElementById('reclamacoesCount');
         if (reclamacoesCount) reclamacoesCount.innerText = Array.isArray(reclamacoes) ? reclamacoes.length : 0;
         
+        const badgeDenuncias = document.getElementById('badgeDenuncias');
+        const badgeReclamacoes = document.getElementById('badgeReclamacoes');
+        const badgeUsuarios = document.getElementById('badgeUsuarios');
+
+        if (badgeDenuncias) badgeDenuncias.innerText = denuncias.length;
+        if (badgeReclamacoes) badgeReclamacoes.innerText = reclamacoes.length;
+        if (badgeUsuarios) badgeUsuarios.innerText = usuarios.length;
+        
         // Atualizar notificações (exemplo)
-        const totalPendentes = (Array.isArray(denuncias) ? denuncias.filter(d => d.status === 'pendente').length : 0) +
-                               (Array.isArray(reclamacoes) ? reclamacoes.filter(r => r.status === 'aberta').length : 0);
+        const totalPendentes = denuncias.filter(d => d.status === 'pendente').length +
+                               reclamacoes.filter(r => r.status === 'aberta').length;
         
         const notificationBadge = document.getElementById('notificationBadge');
         if (notificationBadge) {
@@ -556,8 +722,21 @@ async function init() {
         profileForm.addEventListener('submit', salvarPerfil);
     }
     
+    atualizarMenuAtivo();
     console.log(' Página de perfil do administrador inicializada com sucesso!');
     console.log(' Lembrete: Contas de administrador NÃO podem ser excluídas por segurança.');
+}
+
+function atualizarMenuAtivo() {
+    const path = window.location.pathname.toLowerCase();
+    document.querySelectorAll('aside a.nav-link').forEach(link => {
+        const href = link.getAttribute('href') || '';
+        if (path.endsWith(href.toLowerCase())) {
+            link.classList.add('menu-active');
+        } else {
+            link.classList.remove('menu-active');
+        }
+    });
 }
 
 // Iniciar quando o DOM estiver pronto

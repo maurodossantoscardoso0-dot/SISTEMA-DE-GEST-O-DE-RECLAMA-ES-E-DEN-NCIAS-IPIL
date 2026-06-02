@@ -1,10 +1,14 @@
-// dashboardAdmin.js - Script do Painel Administrativo
+// dashboardAdmin.js - Script do Painel Administrativo Dinâmico
 
-// Variáveis globais
+// ============================================
+// VARIÁVEIS GLOBAIS
+// ============================================
 let denunciasData = [];
 let reclamacoesData = [];
 let usuariosData = [];
+let atividadesData = [];
 let barChart = null;
+let intervaloAtualizacao = null;
 
 // ============================================
 // FUNÇÃO PARA VERIFICAR ADMIN
@@ -19,10 +23,40 @@ function verificarAdmin() {
     if (usuario.tipo !== 'admin') {
         showModal('error', 'Acesso Negado', '⛔ Apenas administradores podem acessar este painel.');
         setTimeout(() => {
-            window.location.href = '../aluno/dashboard.html';
+            window.location.href = '../usuario/dashboard.html';
         }, 2000);
         return null;
     }
+    
+    // Atualizar nome do admin em todos os lugares
+    const adminNomeElement = document.getElementById('adminNome');
+    if (adminNomeElement) adminNomeElement.innerText = usuario.nome;
+    
+    // Atualizar avatar com iniciais
+    const adminAvatar = document.getElementById('adminAvatar');
+    if (adminAvatar) {
+        const partes = usuario.nome.trim().split(/\s+/).filter(Boolean);
+        const iniciais = partes.length > 1
+            ? (partes[0][0] + partes[partes.length - 1][0]).toUpperCase()
+            : partes[0].substring(0, 2).toUpperCase();
+        adminAvatar.innerText = iniciais;
+    }
+    
+    // Saudação personalizada
+    const hora = new Date().getHours();
+    let saudacao = '';
+    if (hora < 12) saudacao = 'Bom dia';
+    else if (hora < 18) saudacao = 'Boa tarde';
+    else saudacao = 'Boa noite';
+    
+    const saudacaoElement = document.getElementById('saudacaoPersonalizada');
+    if (saudacaoElement) {
+        saudacaoElement.innerHTML = `${saudacao}, <span id="adminSaudacaoNome">${usuario.nome.split(' ')[0]}</span>!`;
+    }
+    
+    const adminSaudacaoNome = document.getElementById('adminSaudacaoNome');
+    if (adminSaudacaoNome) adminSaudacaoNome.innerText = usuario.nome.split(' ')[0];
+    
     return usuario;
 }
 
@@ -115,25 +149,39 @@ function escapeHtml(text) {
 }
 
 function getStatusColor(status) {
-    switch ((status || '').toLowerCase()) {
-        case 'aprovado': return 'bg-green-100 text-green-700';
-        case 'rejeitado': return 'bg-red-100 text-red-700';
-        case 'em_analise':
-        case 'em análise': return 'bg-yellow-100 text-yellow-700';
-        case 'pendente': return 'bg-orange-100 text-orange-700';
-        default: return 'bg-gray-100 text-gray-700';
-    }
+    const statusLower = (status || '').toLowerCase();
+    const cores = {
+        'aprovado': 'bg-green-100 text-green-700',
+        'rejeitado': 'bg-red-100 text-red-700',
+        'em_analise': 'bg-yellow-100 text-yellow-700',
+        'em análise': 'bg-yellow-100 text-yellow-700',
+        'pendente': 'bg-orange-100 text-orange-700',
+        'aberta': 'bg-yellow-100 text-yellow-700',
+        'em_andamento': 'bg-blue-100 text-blue-700',
+        'concluida': 'bg-green-100 text-green-700',
+        'resolvida': 'bg-green-100 text-green-700',
+        'arquivada': 'bg-gray-100 text-gray-700',
+        'fechada': 'bg-gray-100 text-gray-700'
+    };
+    return cores[statusLower] || 'bg-gray-100 text-gray-700';
 }
 
 function translateStatus(status) {
-    switch ((status || '').toLowerCase()) {
-        case 'aprovado': return 'Aprovado';
-        case 'rejeitado': return 'Rejeitado';
-        case 'em_analise':
-        case 'em análise': return 'Em Análise';
-        case 'pendente': return 'Pendente';
-        default: return status || 'Não informado';
-    }
+    const statusLower = (status || '').toLowerCase();
+    const traducoes = {
+        'aprovado': 'Aprovado',
+        'rejeitado': 'Rejeitado',
+        'em_analise': 'Em Análise',
+        'em análise': 'Em Análise',
+        'pendente': 'Pendente',
+        'aberta': 'Aberta',
+        'em_andamento': 'Em Andamento',
+        'concluida': 'Concluída',
+        'resolvida': 'Resolvida',
+        'arquivada': 'Arquivada',
+        'fechada': 'Fechada'
+    };
+    return traducoes[statusLower] || status || 'Não informado';
 }
 
 function criarUrlAnexo(anexo) {
@@ -180,54 +228,7 @@ function showModalWithAttachments(type, title, message, detalhes = null, anexos 
         document.head.appendChild(style);
     }
 
-    let anexosHtml = '';
-    if (anexos && anexos.length > 0) {
-        anexosHtml = `
-            <div class="mt-4">
-                <div class="flex items-center space-x-2 mb-3">
-                    <i class="fas fa-paperclip text-orange-500 text-sm"></i>
-                    <span class="text-xs font-semibold text-gray-700 uppercase">Anexos (${anexos.length})</span>
-                </div>
-                <div class="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
-                    ${anexos.map(anexo => {
-                        const fileName = anexo.nome || 'Arquivo';
-                        const fileExt = fileName.split('.').pop().toLowerCase();
-                        const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(fileExt);
-                        const fileUrl = criarUrlAnexo(anexo);
-                        let fileIcon = 'fa-file';
-                        if (isImage) fileIcon = 'fa-file-image';
-                        else if (fileExt === 'pdf') fileIcon = 'fa-file-pdf';
-                        else if (['doc', 'docx'].includes(fileExt)) fileIcon = 'fa-file-word';
-                        else if (['xls', 'xlsx'].includes(fileExt)) fileIcon = 'fa-file-excel';
-                        else if (['zip', 'rar', '7z'].includes(fileExt)) fileIcon = 'fa-file-archive';
-                        return `
-                            <div class="anexo-item bg-gray-50 rounded-lg p-3 border border-gray-200 hover:border-orange-300 transition cursor-pointer" onclick="window.open('${fileUrl}', '_blank')">
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center space-x-3">
-                                        <div class="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
-                                            <i class="fas ${fileIcon} text-orange-600 text-sm"></i>
-                                        </div>
-                                        <div class="flex-1 min-w-0">
-                                            <p class="text-sm font-medium text-gray-800 truncate" title="${fileName}">${fileName.length > 30 ? fileName.substring(0, 30) + '...' : fileName}</p>
-                                            <p class="text-xs text-gray-500">${isImage ? 'Imagem' : 'Documento'}${anexo.tamanho ? ` • ${formatFileSize(anexo.tamanho)}` : ''}</p>
-                                        </div>
-                                    </div>
-                                    <i class="fas fa-external-link-alt text-gray-400 text-xs"></i>
-                                </div>
-                            </div>
-                        `;
-                    }).join('')}
-                </div>
-            </div>
-        `;
-    } else {
-        anexosHtml = `
-            <div class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200 text-center">
-                <i class="fas fa-paperclip text-gray-400 text-lg mb-2 block"></i>
-                <p class="text-xs text-gray-500">Nenhum anexo enviado</p>
-            </div>
-        `;
-    }
+    const anexosHtml = '';  // Ocultar anexos do modal de detalhes de denúncia/reclamação, conforme solicitado.
 
     let detalhesHtml = '';
     if (detalhes) {
@@ -237,12 +238,11 @@ function showModalWithAttachments(type, title, message, detalhes = null, anexos 
                     ${detalhes.protocolo ? `<div class="flex items-center justify-between pb-2 border-b border-gray-200"><span class="text-xs text-gray-500 font-medium">PROTOCOLO</span><span class="text-sm font-mono font-bold text-gray-800">${detalhes.protocolo}</span></div>` : ''}
                     ${detalhes.titulo ? `<div><span class="text-xs text-gray-500 font-medium block mb-1">TÍTULO</span><span class="text-sm font-semibold text-gray-800">${escapeHtml(detalhes.titulo)}</span></div>` : ''}
                     ${detalhes.descricao ? `<div><span class="text-xs text-gray-500 font-medium block mb-1">DESCRIÇÃO</span><p class="text-sm text-gray-700 leading-relaxed">${escapeHtml(detalhes.descricao)}</p></div>` : ''}
-                    ${detalhes.data ? `<div class="flex items-center justify-between"><span class="text-xs text-gray-500 font-medium">DATA DO OCORRIDO</span><span class="text-sm text-gray-700">${detalhes.data}</span></div>` : ''}
+                    ${detalhes.data ? `<div class="flex items-center justify-between"><span class="text-xs text-gray-500 font-medium">DATA</span><span class="text-sm text-gray-700">${detalhes.data}</span></div>` : ''}
                     ${detalhes.local ? `<div class="flex items-center justify-between"><span class="text-xs text-gray-500 font-medium">LOCAL</span><span class="text-sm text-gray-700">${escapeHtml(detalhes.local)}</span></div>` : ''}
                     ${detalhes.status ? `<div class="flex items-center justify-between"><span class="text-xs text-gray-500 font-medium">STATUS</span><span class="px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(detalhes.status)}">${translateStatus(detalhes.status)}</span></div>` : ''}
                     ${detalhes.categoria ? `<div class="flex items-center justify-between"><span class="text-xs text-gray-500 font-medium">CATEGORIA</span><span class="text-sm text-gray-700">${escapeHtml(detalhes.categoria)}</span></div>` : ''}
                     ${detalhes.usuario ? `<div class="flex items-center justify-between"><span class="text-xs text-gray-500 font-medium">USUÁRIO</span><span class="text-sm text-gray-700">${escapeHtml(detalhes.usuario)}</span></div>` : ''}
-                    ${detalhes.email ? `<div class="flex items-center justify-between"><span class="text-xs text-gray-500 font-medium">EMAIL</span><span class="text-sm text-gray-700">${escapeHtml(detalhes.email)}</span></div>` : ''}
                 </div>
             </div>
         `;
@@ -311,13 +311,14 @@ function showToast(type, message) {
 }
 
 // ============================================
-// BUSCAR DADOS DA API
+// BUSCAR DADOS DA API (DINÂMICOS)
 // ============================================
 async function buscarDenuncias() {
     try {
         const response = await fetch('http://localhost:3000/api/denuncias');
         const data = await response.json();
         denunciasData = Array.isArray(data) ? data : (data.data || []);
+        console.log(`✅ ${denunciasData.length} denúncias carregadas`);
         return denunciasData;
     } catch (error) {
         console.error('Erro ao buscar denúncias:', error);
@@ -330,6 +331,7 @@ async function buscarReclamacoes() {
         const response = await fetch('http://localhost:3000/api/reclamacoes');
         const data = await response.json();
         reclamacoesData = Array.isArray(data) ? data : (data.data || []);
+        console.log(`✅ ${reclamacoesData.length} reclamações carregadas`);
         return reclamacoesData;
     } catch (error) {
         console.error('Erro ao buscar reclamações:', error);
@@ -341,7 +343,8 @@ async function buscarUsuarios() {
     try {
         const response = await fetch('http://localhost:3000/api/usuarios');
         const data = await response.json();
-        usuariosData = Array.isArray(data) ? data : (data.data || []);
+        usuariosData = data.success ? data.data : (Array.isArray(data) ? data : []);
+        console.log(`✅ ${usuariosData.length} usuários carregados`);
         return usuariosData;
     } catch (error) {
         console.error('Erro ao buscar usuários:', error);
@@ -370,17 +373,28 @@ async function buscarAnexos(denunciaId, reclamacaoId) {
 }
 
 // ============================================
-// RENDERIZAR CARDS DAS ESTATÍSTICAS
+// RENDERIZAR CARDS DAS ESTATÍSTICAS (DINÂMICO)
 // ============================================
 function renderizarCardsEstatisticas() {
     const totalGeral = denunciasData.length + reclamacoesData.length;
-    const pendentes = denunciasData.filter(d => d.status === 'pendente').length + reclamacoesData.filter(r => r.status === 'aberta' || r.status === 'pendente').length;
+    const pendentes = denunciasData.filter(d => d.status === 'pendente').length + 
+                     reclamacoesData.filter(r => r.status === 'aberta' || r.status === 'pendente').length;
     const totalUsuarios = usuariosData.length;
-    const resolvidos = denunciasData.filter(d => d.status === 'concluida').length + reclamacoesData.filter(r => r.status === 'resolvida' || r.status === 'concluida').length;
+    const resolvidos = denunciasData.filter(d => d.status === 'concluida').length + 
+                      reclamacoesData.filter(r => r.status === 'resolvida' || r.status === 'concluida').length;
     const taxaResolucao = totalGeral > 0 ? Math.round((resolvidos / totalGeral) * 100) : 0;
     
-    const atividadesSemana = [...denunciasData, ...reclamacoesData].filter(item => new Date(item.createdAt).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000).length;
-    const usuariosMes = usuariosData.filter(u => new Date(u.createdAt).getTime() > Date.now() - 30 * 24 * 60 * 60 * 1000).length;
+    // Calcular atividades da última semana
+    const umaSemanaAtras = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const atividadesSemana = [...denunciasData, ...reclamacoesData].filter(
+        item => new Date(item.createdAt).getTime() > umaSemanaAtras
+    ).length;
+    
+    // Calcular novos usuários do mês
+    const umMesAtras = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    const novosUsuariosMes = usuariosData.filter(
+        u => new Date(u.createdAt).getTime() > umMesAtras
+    ).length;
 
     const cardsHtml = `
         <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-orange-600 hover:shadow-lg transition">
@@ -422,7 +436,7 @@ function renderizarCardsEstatisticas() {
                     <h3 class="text-3xl font-bold text-gray-800 mt-2">${totalUsuarios}</h3>
                     <p class="text-xs text-green-600 mt-2">
                         <i class="fas fa-user-plus mr-1"></i>
-                        +${usuariosMes} este mês
+                        +${novosUsuariosMes} este mês
                     </p>
                 </div>
                 <div class="bg-green-100 p-3 rounded-lg">
@@ -460,33 +474,36 @@ function renderizarCardsEstatisticas() {
 }
 
 // ============================================
-// RENDERIZAR GRÁFICO
+// RENDERIZAR GRÁFICO (DINÂMICO - ÚLTIMOS 6 MESES)
 // ============================================
 function renderizarGrafico() {
-    const semanas = ['Semana 1', 'Semana 2', 'Semana 3', 'Semana 4'];
-    const dadosDenunciasSemana = [0, 0, 0, 0];
-    const dadosReclamacoesSemana = [0, 0, 0, 0];
+    const meses = [];
+    const dadosDenuncias = [];
+    const dadosReclamacoes = [];
     
-    const agora = new Date();
-    const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1);
-    
-    denunciasData.forEach(denuncia => {
-        const data = new Date(denuncia.createdAt);
-        if (data >= inicioMes) {
-            const diffDias = Math.floor((data - inicioMes) / (1000 * 60 * 60 * 24));
-            const semana = Math.min(Math.floor(diffDias / 7), 3);
-            dadosDenunciasSemana[semana]++;
-        }
-    });
-    
-    reclamacoesData.forEach(reclamacao => {
-        const data = new Date(reclamacao.createdAt);
-        if (data >= inicioMes) {
-            const diffDias = Math.floor((data - inicioMes) / (1000 * 60 * 60 * 24));
-            const semana = Math.min(Math.floor(diffDias / 7), 3);
-            dadosReclamacoesSemana[semana]++;
-        }
-    });
+    // Últimos 6 meses
+    for (let i = 5; i >= 0; i--) {
+        const data = new Date();
+        data.setMonth(data.getMonth() - i);
+        const nomeMes = data.toLocaleString('pt-PT', { month: 'short' });
+        meses.push(nomeMes);
+        
+        const mes = data.getMonth();
+        const ano = data.getFullYear();
+        
+        const denunciasMes = denunciasData.filter(d => {
+            const dataD = new Date(d.createdAt);
+            return dataD.getMonth() === mes && dataD.getFullYear() === ano;
+        }).length;
+        
+        const reclamacoesMes = reclamacoesData.filter(r => {
+            const dataR = new Date(r.createdAt);
+            return dataR.getMonth() === mes && dataR.getFullYear() === ano;
+        }).length;
+        
+        dadosDenuncias.push(denunciasMes);
+        dadosReclamacoes.push(reclamacoesMes);
+    }
 
     const ctx = document.getElementById('barChart').getContext('2d');
     if (barChart) barChart.destroy();
@@ -494,11 +511,11 @@ function renderizarGrafico() {
     barChart = new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: semanas,
+            labels: meses,
             datasets: [
                 {
                     label: 'Denúncias',
-                    data: dadosDenunciasSemana,
+                    data: dadosDenuncias,
                     backgroundColor: 'rgba(249, 115, 22, 0.7)',
                     borderColor: 'rgba(249, 115, 22, 1)',
                     borderWidth: 1,
@@ -506,7 +523,7 @@ function renderizarGrafico() {
                 },
                 {
                     label: 'Reclamações',
-                    data: dadosReclamacoesSemana,
+                    data: dadosReclamacoes,
                     backgroundColor: 'rgba(234, 179, 8, 0.7)',
                     borderColor: 'rgba(234, 179, 8, 1)',
                     borderWidth: 1,
@@ -530,7 +547,11 @@ function renderizarGrafico() {
                 }
             },
             scales: {
-                y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
+                y: { 
+                    beginAtZero: true, 
+                    ticks: { stepSize: 1 }, 
+                    grid: { color: 'rgba(0, 0, 0, 0.05)' } 
+                },
                 x: { grid: { display: false } }
             }
         }
@@ -538,51 +559,60 @@ function renderizarGrafico() {
 }
 
 // ============================================
-// RENDERIZAR ATIVIDADES RECENTES
+// RENDERIZAR ATIVIDADES RECENTES (DINÂMICO)
 // ============================================
 function renderizarAtividades() {
     const todasAtividades = [
-        ...denunciasData.map(d => ({ ...d, tipo_item: 'denuncia' })),
-        ...reclamacoesData.map(r => ({ ...r, tipo_item: 'reclamacao' }))
+        ...denunciasData.map(d => ({ 
+            ...d, 
+            tipo_item: 'denuncia',
+            icone: 'fa-exclamation-triangle',
+            bgIcon: 'bg-orange-100',
+            textoIcone: 'text-orange-600'
+        })),
+        ...reclamacoesData.map(r => ({ 
+            ...r, 
+            tipo_item: 'reclamacao',
+            icone: 'fa-flag',
+            bgIcon: 'bg-yellow-100',
+            textoIcone: 'text-yellow-600'
+        }))
     ];
     
     todasAtividades.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    const atividadesRecentes = todasAtividades.slice(0, 5);
+    const atividadesRecentes = todasAtividades.slice(0, 10);
     
     const totalAtividades = document.getElementById('totalAtividades');
     if (totalAtividades) totalAtividades.innerText = todasAtividades.length;
     
-    const icones = {
-        pendente: 'fa-clock text-yellow-600 bg-yellow-100',
-        em_andamento: 'fa-sync-alt text-blue-600 bg-blue-100',
-        concluida: 'fa-check text-green-600 bg-green-100',
-        arquivada: 'fa-archive text-gray-600 bg-gray-100',
-        aberta: 'fa-envelope-open text-yellow-600 bg-yellow-100',
-        resolvida: 'fa-check-circle text-green-600 bg-green-100',
-        fechada: 'fa-times-circle text-gray-600 bg-gray-100'
-    };
-    
     let atividadesHtml = '';
-    atividadesRecentes.forEach(item => {
-        const icone = icones[item.status] || icones.pendente;
-        const tipoIcone = item.tipo_item === 'denuncia' ? 'fa-exclamation-triangle' : 'fa-flag';
-        const dataFormatada = new Date(item.createdAt).toLocaleDateString('pt-PT');
-        
-        atividadesHtml += `
-            <div class="flex items-start space-x-3 cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition" onclick="verDetalhes(${item.id}, '${item.tipo_item}')">
-                <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${icone.split(' ').slice(2).join(' ')}">
-                    <i class="fas ${tipoIcone} ${icone.split(' ')[0]} text-sm"></i>
-                </div>
-                <div class="flex-1">
-                    <p class="text-sm font-medium text-gray-800">${item.titulo.substring(0, 40)}${item.titulo.length > 40 ? '...' : ''}</p>
-                    <p class="text-xs text-gray-500">${dataFormatada} • ${item.status.replace('_', ' ')}</p>
-                </div>
-            </div>
-        `;
-    });
-    
     if (atividadesRecentes.length === 0) {
-        atividadesHtml = '<p class="text-center text-gray-500 py-4">Nenhuma atividade recente</p>';
+        atividadesHtml = '<div class="text-center text-gray-500 py-4">Nenhuma atividade recente</div>';
+    } else {
+        atividadesRecentes.forEach(item => {
+            const dataFormatada = new Date(item.createdAt).toLocaleDateString('pt-PT');
+            const statusTraduzido = translateStatus(item.status);
+            const statusCor = getStatusColor(item.status);
+            
+            atividadesHtml += `
+                <div class="flex items-start space-x-3 cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition" onclick="verDetalhes(${item.id}, '${item.tipo_item}')">
+                    <div class="w-8 h-8 ${item.bgIcon} rounded-full flex items-center justify-center flex-shrink-0">
+                        <i class="fas ${item.icone} ${item.textoIcone} text-sm"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-800 truncate" title="${item.titulo}">
+                            ${item.titulo.length > 50 ? item.titulo.substring(0, 50) + '...' : item.titulo}
+                        </p>
+                        <div class="flex items-center space-x-2 mt-1">
+                            <span class="text-xs text-gray-500">${dataFormatada}</span>
+                            <span class="w-1 h-1 bg-gray-300 rounded-full"></span>
+                            <span class="text-xs px-1.5 py-0.5 rounded-full ${statusCor}">${statusTraduzido}</span>
+                        </div>
+                    </div>
+                    <i class="fas fa-chevron-right text-gray-300 text-sm"></i>
+                </div>
+            `;
+        });
     }
     
     const listaAtividades = document.getElementById('listaAtividades');
@@ -590,8 +620,7 @@ function renderizarAtividades() {
 }
 
 // ============================================
-// RENDERIZAR TABELA DE GESTÃO (SEM ÍCONE DE FOLHA)
-// ORDEM: Título, Tipo, Categoria, Data, Status, Ações
+// RENDERIZAR TABELA DE GESTÃO (DINÂMICA)
 // ============================================
 async function carregarTabelaGeral() {
     await buscarDenuncias();
@@ -671,7 +700,6 @@ async function carregarTabelaGeral() {
             
             tabelaHtml += `
                 <tr class="hover:bg-gray-50 transition cursor-pointer" onclick="verDetalhes(${item.id}, '${item.tipo_item}')">
-                    <!-- Título -->
                     <td class="px-6 py-4">
                         <div class="flex items-center space-x-3">
                             <div class="w-8 h-8 ${item.bgIcon} rounded-full flex items-center justify-center">
@@ -682,21 +710,17 @@ async function carregarTabelaGeral() {
                             </span>
                         </div>
                     </td>
-                    <!-- Tipo -->
                     <td class="px-6 py-4 whitespace-nowrap">
                         <span class="text-sm font-semibold ${item.tipo_item === 'denuncia' ? 'text-orange-600' : 'text-yellow-600'}">
                             ${item.tipo_texto}
                         </span>
                     </td>
-                    <!-- Categoria -->
                     <td class="px-6 py-4 whitespace-nowrap">
                         <span class="text-sm text-gray-600">${item.categoria_exibicao}</span>
                     </td>
-                    <!-- Data -->
                     <td class="px-6 py-4 whitespace-nowrap">
                         <span class="text-sm text-gray-500">${dataFormatada}</span>
                     </td>
-                    <!-- Status -->
                     <td class="px-6 py-4 whitespace-nowrap">
                         <select onchange="atualizarStatus(${item.id}, '${item.tipo_item === 'denuncia' ? 'denuncias' : 'reclamacoes'}', this.value, event)" 
                                 class="text-xs border rounded-lg px-2 py-1 ${cor} focus:outline-none focus:ring-2 focus:ring-orange-500" 
@@ -714,7 +738,6 @@ async function carregarTabelaGeral() {
                             `}
                         </select>
                     </td>
-                    <!-- Ações - Apenas ícone de olho -->
                     <td class="px-6 py-4 whitespace-nowrap">
                         <button onclick="verDetalhes(${item.id}, '${item.tipo_item}')" 
                                 class="text-blue-600 hover:text-blue-800 transition p-2 hover:bg-blue-50 rounded-lg" 
@@ -722,7 +745,7 @@ async function carregarTabelaGeral() {
                             <i class="fas fa-eye"></i>
                         </button>
                     </td>
-                </table>
+                </tr>
             `;
         });
     }
@@ -732,7 +755,7 @@ async function carregarTabelaGeral() {
 }
 
 // ============================================
-// VER DETALHES (Resumo)
+// VER DETALHES COM DADOS DO BANCO
 // ============================================
 async function verDetalhes(id, tipo) {
     const item = tipo === 'denuncia' 
@@ -745,30 +768,40 @@ async function verDetalhes(id, tipo) {
     }
 
     try {
-        const anexos = await buscarAnexos(tipo === 'denuncia' ? id : null, tipo === 'reclamacao' ? id : null);
-        const dataFormatada = new Date(item.createdAt).toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const dataFormatada = new Date(item.createdAt).toLocaleDateString('pt-PT', { 
+            day: '2-digit', 
+            month: '2-digit', 
+            year: 'numeric' 
+        });
+        
+        // Buscar dados do usuário que criou
+        let nomeUsuario = 'N/A';
+        if (item.usuario_id) {
+            const usuario = usuariosData.find(u => u.id === item.usuario_id);
+            if (usuario) nomeUsuario = usuario.nome;
+        }
+        
         const detalhes = {
-            protocolo: item.protocolo || 'N/A',
+            protocolo: item.protocolo || `#${item.id}`,
             titulo: item.titulo,
-            descricao: item.descricao,
+            descricao: item.descricao || 'Sem descrição detalhada',
             data: dataFormatada,
             local: item.local || 'Não informado',
             status: item.status,
             categoria: tipo === 'denuncia' ? (item.tipo || 'Não informada') : (item.categoria || 'Não informada'),
-            usuario: item.usuario_id ? `ID ${item.usuario_id}` : 'N/A',
-            email: 'N/A'
+            usuario: nomeUsuario
         };
 
         const tipoTexto = tipo === 'denuncia' ? 'Denúncia' : 'Reclamação';
-        showModalWithAttachments('detalhe', `Detalhes da ${tipoTexto}`, `Visualizando detalhes da ${tipoTexto.toLowerCase()}`, detalhes, anexos);
+        showModalWithAttachments('detalhe', `Detalhes da ${tipoTexto}`, `Visualizando detalhes da ${tipoTexto.toLowerCase()}`, detalhes, []);
     } catch (error) {
-        console.error('Erro ao carregar anexos:', error);
-        showToast('error', 'Erro ao carregar os anexos');
+        console.error('Erro ao carregar detalhes:', error);
+        showToast('error', 'Erro ao carregar os detalhes');
     }
 }
 
 // ============================================
-// ATUALIZAR STATUS
+// ATUALIZAR STATUS NO BANCO
 // ============================================
 async function atualizarStatus(id, tipo, status, evento) {
     if (evento) evento.stopPropagation();
@@ -787,6 +820,7 @@ async function atualizarStatus(id, tipo, status, evento) {
             await renderizarCardsEstatisticas();
             await renderizarAtividades();
             await renderizarNotificacoes();
+            renderizarGrafico();
         } else {
             showToast('error', 'Erro ao atualizar status');
         }
@@ -797,11 +831,16 @@ async function atualizarStatus(id, tipo, status, evento) {
 }
 
 // ============================================
-// RENDERIZAR CARDS DE FUNCIONALIDADES (APENAS 3 CARDS)
+// RENDERIZAR CARDS DE FUNCIONALIDADES
 // ============================================
 function renderizarCardsFuncionalidades() {
     const totalDenuncias = denunciasData.length;
     const totalReclamacoes = reclamacoesData.length;
+    const novosUsuariosMes = usuariosData.filter(u => {
+        const dataCriacao = new Date(u.createdAt);
+        const umMesAtras = Date.now() - 30 * 24 * 60 * 60 * 1000;
+        return dataCriacao.getTime() > umMesAtras;
+    }).length;
     
     const cardsHtml = `
         <div class="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition border-t-4 border-indigo-500">
@@ -809,7 +848,7 @@ function renderizarCardsFuncionalidades() {
                 <div class="bg-indigo-100 p-3 rounded-lg">
                     <i class="fas fa-users text-indigo-600 text-xl"></i>
                 </div>
-                <span class="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">+${usuariosData.filter(u => new Date(u.createdAt).getTime() > Date.now() - 30 * 24 * 60 * 60 * 1000).length} novo</span>
+                <span class="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">+${novosUsuariosMes} novo</span>
             </div>
             <h3 class="text-lg font-bold text-gray-800 mb-1">Gestão de Usuários</h3>
             <p class="text-sm text-gray-500 mb-4">${usuariosData.length} usuários registrados</p>
@@ -830,7 +869,7 @@ function renderizarCardsFuncionalidades() {
             <h3 class="text-lg font-bold text-gray-800 mb-1">Configurações do Sistema</h3>
             <p class="text-sm text-gray-500 mb-4">Parâmetros gerais, categorias e permissões</p>
             <div class="flex justify-end">
-                <a href="#" class="text-purple-600 text-sm font-medium hover:text-purple-800">
+                <a href="configuracoes.html" class="text-purple-600 text-sm font-medium hover:text-purple-800">
                     Configurar <i class="fas fa-arrow-right ml-1"></i>
                 </a>
             </div>
@@ -857,7 +896,7 @@ function renderizarCardsFuncionalidades() {
 }
 
 // ============================================
-// NOTIFICAÇÕES
+// NOTIFICAÇÕES DINÂMICAS
 // ============================================
 function renderizarNotificacoes() {
     const pendentesDenuncias = denunciasData.filter(d => d.status === 'pendente');
@@ -939,6 +978,47 @@ function setupNotificacaoDropdown() {
 }
 
 // ============================================
+// ATUALIZAR DADOS (REFRESH MANUAL)
+// ============================================
+async function atualizarDados() {
+    showToast('info', '🔄 Atualizando dados...');
+    await Promise.all([
+        buscarDenuncias(),
+        buscarReclamacoes(),
+        buscarUsuarios()
+    ]);
+    renderizarCardsEstatisticas();
+    renderizarGrafico();
+    renderizarAtividades();
+    await carregarTabelaGeral();
+    renderizarCardsFuncionalidades();
+    renderizarNotificacoes();
+    showToast('success', '✅ Dados atualizados com sucesso!');
+}
+
+// ============================================
+// ATUALIZAÇÃO PERIÓDICA AUTOMÁTICA
+// ============================================
+function iniciarAtualizacaoPeriodica() {
+    if (intervaloAtualizacao) clearInterval(intervaloAtualizacao);
+    
+    intervaloAtualizacao = setInterval(async () => {
+        await Promise.all([
+            buscarDenuncias(),
+            buscarReclamacoes(),
+            buscarUsuarios()
+        ]);
+        renderizarCardsEstatisticas();
+        renderizarGrafico();
+        renderizarAtividades();
+        await carregarTabelaGeral();
+        renderizarCardsFuncionalidades();
+        renderizarNotificacoes();
+        console.log('🔄 Dashboard atualizado automaticamente em:', new Date().toLocaleTimeString());
+    }, 30000); // Atualiza a cada 30 segundos
+}
+
+// ============================================
 // LOGOUT COM MODAL
 // ============================================
 function logout() {
@@ -948,7 +1028,6 @@ function logout() {
     const modal = document.createElement('div');
     modal.id = 'logoutConfirmModal';
     modal.className = 'fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 backdrop-blur-sm';
-    modal.style.animation = 'fadeIn 0.3s ease';
     
     if (!document.getElementById('logoutStyles')) {
         const style = document.createElement('style');
@@ -1015,43 +1094,22 @@ function logout() {
 }
 
 // ============================================
-// ATUALIZAR CONTADORES PERIODICAMENTE
-// ============================================
-let intervaloAtualizacao = null;
-
-function iniciarAtualizacaoPeriodica() {
-    if (intervaloAtualizacao) clearInterval(intervaloAtualizacao);
-    
-    intervaloAtualizacao = setInterval(async () => {
-        await buscarDenuncias();
-        await buscarReclamacoes();
-        await buscarUsuarios();
-        renderizarCardsEstatisticas();
-        renderizarGrafico();
-        renderizarAtividades();
-        await carregarTabelaGeral();
-        renderizarCardsFuncionalidades();
-        renderizarNotificacoes();
-        console.log('🔄 Dashboard atualizado automaticamente');
-    }, 30000);
-}
-
-// ============================================
 // INICIALIZAÇÃO PRINCIPAL
 // ============================================
 async function init() {
+    console.log('🚀 Inicializando Dashboard do Administrador...');
+    
     const admin = verificarAdmin();
     if (!admin) return;
     
-    const adminNomeElement = document.getElementById('adminNome');
-    if (adminNomeElement) adminNomeElement.innerText = admin.nome;
-    
+    // Carregar dados iniciais
     await Promise.all([
         buscarDenuncias(),
         buscarReclamacoes(),
         buscarUsuarios()
     ]);
     
+    // Renderizar todos os componentes
     renderizarCardsEstatisticas();
     renderizarGrafico();
     renderizarAtividades();
@@ -1061,7 +1119,9 @@ async function init() {
     setupNotificacaoDropdown();
     iniciarAtualizacaoPeriodica();
     
+    // Exibir resumo no console
     console.log('✅ Dashboard do Administrador inicializado com sucesso!');
+    console.log(`📊 Resumo: ${denunciasData.length} denúncias, ${reclamacoesData.length} reclamações, ${usuariosData.length} usuários`);
 }
 
 // Iniciar quando o DOM estiver carregado

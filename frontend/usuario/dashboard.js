@@ -1,4 +1,4 @@
-// dashboardAdmin.js - Script do Painel Administrativo
+// dashboard.js - Script do Dashboard do Usuário
 
 let denunciasData = [];
 let reclamacoesData = [];
@@ -44,6 +44,29 @@ function translateStatus(status) {
         'fechada': 'Fechada'
     };
     return traducoes[status] || status;
+}
+
+// Função para debug - mostrar dados do usuário no console
+function debugUsuarioLogado() {
+    const usuarioStr = sessionStorage.getItem('usuarioLogado');
+    if (usuarioStr) {
+        try {
+            const usuario = JSON.parse(usuarioStr);
+            console.log(' Dados do usuário logado:');
+            console.log('  - ID:', usuario.id);
+            console.log('  - Nome:', usuario.nome);
+            console.log('  - Email:', usuario.email);
+            console.log('  - Processo:', usuario.numero_processo);
+            console.log('  - Tipo:', usuario.tipo);
+            console.log('  - Data login:', usuario.data_login);
+            return usuario;
+        } catch(e) {
+            console.error('Erro ao parsear usuário:', e);
+        }
+    } else {
+        console.warn(' Nenhum usuário encontrado no sessionStorage');
+    }
+    return null;
 }
 
 async function buscarAnexos(denunciaId, reclamacaoId) {
@@ -114,62 +137,7 @@ function showModalWithAttachments(type, title, message, detalhes = null, anexos 
         document.head.appendChild(style);
     }
     
-    let anexosHtml = '';
-    if (anexos && anexos.length > 0) {
-        anexosHtml = `
-            <div class="mt-4">
-                <div class="flex items-center space-x-2 mb-3">
-                    <i class="fas fa-paperclip text-orange-500 text-sm"></i>
-                    <span class="text-xs font-semibold text-gray-700 uppercase">Anexos (${anexos.length})</span>
-                </div>
-                <div class="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
-                    ${anexos.map(anexo => {
-                        const fileName = anexo.nome || 'Arquivo';
-                        const fileExt = fileName.split('.').pop().toLowerCase();
-                        const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(fileExt);
-                        const fileUrl = criarUrlAnexo(anexo);
-                        
-                        let fileIcon = 'fa-file';
-                        if (isImage) fileIcon = 'fa-file-image';
-                        else if (fileExt === 'pdf') fileIcon = 'fa-file-pdf';
-                        else if (['doc', 'docx'].includes(fileExt)) fileIcon = 'fa-file-word';
-                        else if (['xls', 'xlsx'].includes(fileExt)) fileIcon = 'fa-file-excel';
-                        else if (['zip', 'rar', '7z'].includes(fileExt)) fileIcon = 'fa-file-archive';
-                        
-                        return `
-                            <div class="anexo-item bg-gray-50 rounded-lg p-3 border border-gray-200 hover:border-orange-300 transition cursor-pointer"
-                                 onclick="window.open('${fileUrl}', '_blank')">
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center space-x-3">
-                                        <div class="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
-                                            <i class="fas ${fileIcon} text-orange-600 text-sm"></i>
-                                        </div>
-                                        <div class="flex-1 min-w-0">
-                                            <p class="text-sm font-medium text-gray-800 truncate" title="${fileName}">
-                                                ${fileName.length > 30 ? fileName.substring(0, 30) + '...' : fileName}
-                                            </p>
-                                            <p class="text-xs text-gray-500">
-                                                ${isImage ? 'Imagem' : 'Documento'}
-                                                ${anexo.tamanho ? ` • ${formatFileSize(anexo.tamanho)}` : ''}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <i class="fas fa-external-link-alt text-gray-400 text-xs"></i>
-                                </div>
-                            </div>
-                        `;
-                    }).join('')}
-                </div>
-            </div>
-        `;
-    } else {
-        anexosHtml = `
-            <div class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200 text-center">
-                <i class="fas fa-paperclip text-gray-400 text-lg mb-2 block"></i>
-                <p class="text-xs text-gray-500">Nenhum anexo enviado</p>
-            </div>
-        `;
-    }
+    const anexosHtml = '';  // Ocultar anexos do modal de detalhes de denúncia/reclamação.
     
     let detalhesHtml = '';
     if (detalhes) {
@@ -243,21 +211,41 @@ function showToast(type, message) {
 
 function verificarUsuario() {
     const usuarioLogado = sessionStorage.getItem('usuarioLogado');
+    
     if (!usuarioLogado) {
+        console.warn(' Usuário não encontrado no sessionStorage');
         window.location.href = '../login.html';
         return null;
     }
-    const usuario = JSON.parse(usuarioLogado);
-    if (usuario.tipo === 'admin') {
-        window.location.href = '../admin/dashboardAdmin.html';
+    
+    try {
+        const usuario = JSON.parse(usuarioLogado);
+        console.log(' Usuário carregado:', usuario);
+        
+        if (usuario.tipo === 'admin') {
+            window.location.href = '../admin/dashboardAdmin.html';
+            return null;
+        }
+        
+        return usuario;
+    } catch (error) {
+        console.error(' Erro ao parsear usuário:', error);
+        window.location.href = '../login.html';
         return null;
     }
-    return usuario;
+}
+
+function obterIniciaisNomeCompleto(nome) {
+    if (!nome) return 'US';
+    const partes = nome.trim().split(/\s+/).filter(Boolean);
+    if (partes.length === 0) return 'US';
+    if (partes.length === 1) return partes[0].substring(0, 2).toUpperCase();
+    return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
 }
 
 function aplicarFotoPerfil(usuario) {
     const fotoPerfil = usuario.foto_perfil || usuario.fotoPerfil || '';
-    const initials = usuario.nome ? usuario.nome.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase() : 'US';
+    const initials = obterIniciaisNomeCompleto(usuario.nome);
     const avatarIds = ['usuarioAvatar', 'avatarMobile'];
 
     avatarIds.forEach(id => {
@@ -276,6 +264,20 @@ function aplicarFotoPerfil(usuario) {
             element.textContent = initials;
         }
     });
+}
+
+// Função para obter saudação personalizada
+function obterSaudacaoPersonalizada(nome) {
+    const hora = new Date().getHours();
+    const primeiroNome = nome ? nome.split(' ')[0] : 'Usuário';
+    
+    if (hora < 12) {
+        return `Bom dia, ${primeiroNome}! `;
+    } else if (hora < 18) {
+        return `Boa tarde, ${primeiroNome}! `;
+    } else {
+        return `Boa noite, ${primeiroNome}! `;
+    }
 }
 
 async function buscarDenuncias() {
@@ -321,8 +323,6 @@ async function verDetalhes(id, tipo) {
             if (usuario) { usuarioInfo = { nome: usuario.nome, email: usuario.email, processo: usuario.numero_processo }; }
         }
         
-        const anexos = await buscarAnexos(tipo === 'denuncia' ? id : null, tipo === 'reclamacao' ? id : null);
-        
         const dataFormatada = new Date(item.data_ocorrencia || item.createdAt).toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' });
         
         const detalhes = {
@@ -338,7 +338,7 @@ async function verDetalhes(id, tipo) {
         };
         
         const tipoTexto = tipo === 'denuncia' ? 'Denúncia' : 'Reclamação';
-        showModalWithAttachments('detalhe', `${tipoTexto} - ${item.titulo.substring(0, 50)}`, `Visualizando detalhes da ${tipoTexto.toLowerCase()}`, detalhes, anexos);
+        showModalWithAttachments('detalhe', `${tipoTexto} - ${item.titulo.substring(0, 50)}`, `Visualizando detalhes da ${tipoTexto.toLowerCase()}`, detalhes, []);
     } catch (error) {
         console.error('Erro ao carregar detalhes:', error);
         showToast('error', 'Não foi possível carregar os detalhes');
@@ -385,7 +385,6 @@ function renderizarCardsEstatisticas() {
     if (badgeDenuncias) badgeDenuncias.innerText = denunciasData.length;
     if (badgeReclamacoes) badgeReclamacoes.innerText = reclamacoesData.length;
 }
-
 
 function renderizarGrafico() {
     const dias = [];
@@ -841,29 +840,87 @@ function iniciarAtualizacaoPeriodica() {
 }
 
 async function init() {
+    // Chamar debug para verificar dados
+    debugUsuarioLogado();
+    
     const usuario = verificarUsuario();
     if (!usuario) return;
+    
+    // 🔥 ATUALIZAR SAUDAÇÃO COM NOME DO USUÁRIO
+    const saudacaoPersonalizada = document.getElementById('saudacaoPersonalizada');
+    const saudacaoNome = document.getElementById('saudacaoNome');
     const usuarioNomeElement = document.getElementById('usuarioNome');
     const usuarioProcessoElement = document.getElementById('usuarioProcesso');
-    const usuarioAvatar = document.getElementById('usuarioAvatar');
-
-    if (usuarioNomeElement) usuarioNomeElement.innerText = usuario.nome;
-    if (usuarioProcessoElement) usuarioProcessoElement.innerText = `Processo: ${usuario.numero_processo || 'N/A'}`;
     const nomeMobile = document.getElementById('nomeMobile');
     const processoMobile = document.getElementById('processoMobile');
-    if (nomeMobile) nomeMobile.innerText = usuario.nome;
-    if (processoMobile) processoMobile.innerText = `Processo: ${usuario.numero_processo || 'N/A'}`;
+    
+    // Extrair primeiro nome para saudação
+    const primeiroNome = usuario.nome ? usuario.nome.split(' ')[0] : 'Usuário';
+    
+    // Atualizar saudação personalizada
+    if (saudacaoPersonalizada) {
+        saudacaoPersonalizada.innerText = obterSaudacaoPersonalizada(usuario.nome);
+    }
+    
+    if (saudacaoNome) {
+        saudacaoNome.innerText = primeiroNome;
+    }
+    
+    if (usuarioNomeElement) {
+        usuarioNomeElement.innerText = usuario.nome || 'Usuário';
+    }
+    
+    if (usuarioProcessoElement) {
+        usuarioProcessoElement.innerText = `Processo: ${usuario.numero_processo || 'N/A'}`;
+    }
+    
+    if (nomeMobile) {
+        nomeMobile.innerText = usuario.nome || 'Usuário';
+    }
+    
+    if (processoMobile) {
+        processoMobile.innerText = `Processo: ${usuario.numero_processo || 'N/A'}`;
+    }
+    
+    // 🔥 ATUALIZAR MENSAGEM DE SAUDAÇÃO BASEADA NO HORÁRIO
+    const saudacaoMensagem = document.getElementById('saudacaoMensagem');
+    if (saudacaoMensagem) {
+        const hora = new Date().getHours();
+        let mensagem = '';
+        
+        if (hora < 12) {
+            mensagem = 'Bom dia! Acompanhe as suas actividades e estatísticas em tempo real';
+        } else if (hora < 18) {
+            mensagem = 'Boa tarde! Acompanhe as suas actividades e estatísticas em tempo real';
+        } else {
+            mensagem = 'Boa noite! Acompanhe as suas actividades e estatísticas em tempo real';
+        }
+        
+        saudacaoMensagem.innerText = mensagem;
+    }
+    
+    // Aplicar foto de perfil
     aplicarFotoPerfil(usuario);
-
-    await Promise.all([buscarDenuncias(), buscarReclamacoes()]);
+    
+    // Atualizar título da página
+    document.title = `${primeiroNome} | IPIL - Dashboard`;
+    
+    // Buscar dados
+    await Promise.all([buscarDenuncias(), buscarReclamacoes(), buscarUsuarios()]);
+    
+    // Renderizar tudo
     renderizarCardsEstatisticas();
     renderizarGrafico();
     renderizarGraficoPizza();
     renderizarAtividades();
+    renderizarCardsFuncionalidades();
     renderizarNotificacoes();
+    await carregarTabelaGeral();
     setupNotificacaoDropdown();
     iniciarAtualizacaoPeriodica();
-    console.log('✅ Dashboard inicializado com sucesso!');
+    
+    console.log('✅ Dashboard inicializado com sucesso para:', usuario.nome);
 }
 
+// Inicializar quando o DOM estiver carregado
 document.addEventListener('DOMContentLoaded', init);

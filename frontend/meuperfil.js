@@ -216,6 +216,17 @@ async function carregarContadores() {
                 denunciasCount.classList.remove('bg-red-500', 'text-white');
             }
         }
+
+        const notificationBadge = document.getElementById('notificationBadge');
+        const totalPendentes = totalReclamacoes + totalDenuncias;
+        if (notificationBadge) {
+            if (totalPendentes > 0) {
+                notificationBadge.innerText = totalPendentes > 9 ? '9+' : totalPendentes;
+                notificationBadge.classList.remove('hidden');
+            } else {
+                notificationBadge.classList.add('hidden');
+            }
+        }
         
         console.log(`Contadores atualizados: ${totalReclamacoes} reclamações, ${totalDenuncias} denúncias`);
         

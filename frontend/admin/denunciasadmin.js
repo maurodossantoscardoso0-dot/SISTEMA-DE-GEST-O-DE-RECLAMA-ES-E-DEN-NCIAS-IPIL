@@ -214,7 +214,7 @@ async function showDetailsModal(denuncia) {
     const statusColor = statusCores[denuncia.status] || statusCores.pendente;
     const dataCriacao = new Date(denuncia.createdAt).toLocaleString('pt-PT');
     const dataAtualizacao = new Date(denuncia.updatedAt).toLocaleString('pt-PT');
-    const anexos = await buscarAnexos(denuncia.id, null);
+    // Não incluir anexos no modal de detalhes conforme solicitado.
     
     const categoriaLabels = {
         infraestrutura: '🏗️ Infraestrutura',
@@ -283,7 +283,6 @@ async function showDetailsModal(denuncia) {
                     <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">${escapeHtml(denuncia.descricao)}</p>
                 </div>
             </div>
-            ${renderAnexosHtml(anexos)}
         </div>
     `;
     

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IPIL - Configurações | Painel Administrativo</title>
+    <title>IPIL - Configurações do Sistema</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -11,618 +11,265 @@
         * { font-family: 'Inter', sans-serif; }
         .nav-link { transition: all 0.3s ease; }
         .nav-link:hover { transform: translateY(-2px); }
-        .config-card { transition: all 0.3s ease; }
-        .config-card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 50px;
-            height: 24px;
-        }
-        .switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 34px;
-        }
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 18px;
-            width: 18px;
-            left: 3px;
-            bottom: 3px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
-        input:checked + .slider {
-            background-color: #f97316;
-        }
-        input:checked + .slider:before {
-            transform: translateX(26px);
-        }
-        .toast-slide-in {
-            animation: slideInRight 0.3s ease;
-        }
-        @keyframes slideInRight {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        .modal-slide-in {
-            animation: slideIn 0.3s ease;
-        }
-        @keyframes slideIn {
-            from { transform: translateY(-50px) scale(0.9); opacity: 0; }
-            to { transform: translateY(0) scale(1); opacity: 1; }
-        }
+        .setting-card { transition: all 0.3s ease; }
+        .setting-card:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+        .dark-mode { background-color: #1a1a2e; color: #eee; }
+        .dark-mode .bg-white { background-color: #16213e; }
+        .dark-mode .bg-gray-50 { background-color: #0f3460; }
+        .dark-mode .text-gray-600 { color: #ccc; }
+        .dark-mode .text-gray-700 { color: #ddd; }
+        .dark-mode .border-gray-200 { border-color: #2c3e66; }
     </style>
 </head>
 <body class="bg-gray-50">
-
-    <!-- Navbar superior -->
+    
+    <!-- Navbar -->
     <nav class="bg-white shadow-lg border-b border-gray-200 fixed w-full z-50 top-0">
         <div class="container mx-auto px-4">
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center space-x-3">
-                    <div class="bg-gradient-to-r from-orange-600 to-orange-800 text-white text-xl font-bold px-4 py-2 rounded-lg shadow-md">
-                        IPIL
-                    </div>
-                    <div class="hidden md:block">
-                        <span class="text-gray-700 font-semibold">Painel do Administrador</span>
-                    </div>
+                    <div class="bg-gradient-to-r from-orange-400 to-orange-600 text-white text-xl font-bold px-4 py-2 rounded-lg shadow-md">IPIL</div>
+                    <div class="hidden md:block"><span class="text-gray-700 font-semibold">Painel Administrativo</span></div>
                 </div>
-
                 <div class="flex items-center space-x-4">
-                    <div class="relative">
-                        <button id="notificacaoBtn" class="relative text-gray-600 hover:text-orange-600 transition">
-                            <i class="fas fa-bell text-xl"></i>
-                            <span id="contadorNotificacoes" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
-                        </button>
-                    </div>
-                    
                     <div class="flex items-center space-x-3">
                         <div class="text-right hidden md:block">
                             <p id="adminNome" class="text-sm font-semibold text-gray-800">Administrador</p>
                             <p class="text-xs text-gray-500">Super Admin</p>
                         </div>
-                        <div class="w-10 h-10 bg-gradient-to-r from-orange-600 to-orange-800 rounded-full flex items-center justify-center text-white font-bold">
-                            AD
-                        </div>
+                        <div id="adminAvatar" class="w-10 h-10 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-white font-bold">AD</div>
                     </div>
                 </div>
             </div>
         </div>
     </nav>
 
-    <!-- Layout principal -->
     <div class="flex pt-16">
-        
         <!-- Sidebar -->
         <aside class="w-64 bg-white shadow-lg h-screen fixed hidden lg:block overflow-y-auto">
-            <div class="p-6">
+              
+      
+            
                 <div class="space-y-2">
                     <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Menu Admin</p>
-                    
-                    <a href="dashboardAdmin.html" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-orange-50 hover:text-orange-700 rounded-xl transition nav-link">
-                        <i class="fas fa-tachometer-alt w-5"></i>
-                        <span>Dashboard</span>
-                    </a>
-                    
-                    <a href="denunciasadmin.html" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-orange-50 hover:text-orange-700 rounded-xl transition nav-link">
-                        <i class="fas fa-exclamation-triangle w-5"></i>
-                        <span>Denúncias</span>
-                        <span id="badgeDenuncias" class="ml-auto bg-red-100 text-red-600 text-xs px-2 py-1 rounded-full">0</span>
-                    </a>
-                    
-                    <a href="reclamacoesadmin.html" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-orange-50 hover:text-orange-700 rounded-xl transition nav-link">
-                        <i class="fas fa-flag w-5"></i>
-                        <span>Reclamações</span>
-                        <span id="badgeReclamacoes" class="ml-auto bg-yellow-100 text-yellow-600 text-xs px-2 py-1 rounded-full">0</span>
-                    </a>
-                    
-                    <a href="usuarios.html" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-orange-50 hover:text-orange-700 rounded-xl transition nav-link">
-                        <i class="fas fa-users w-5"></i>
-                        <span>Usuários</span>
-                        <span id="badgeUsuarios" class="ml-auto bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">0</span>
-                    </a>
-                    
-                    <a href="relatorioadmin.html" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-orange-50 hover:text-orange-700 rounded-xl transition nav-link">
-                        <i class="fas fa-chart-line w-5"></i>
-                        <span>Relatórios</span>
-                    </a>
+                    <a href="dashboardAdmin.html" class="flex items-center space-x-3 px-4 py-3 rounded-xl transition nav-link"><i class="fas fa-tachometer-alt w-5"></i><span>Dashboard</span></a>
+                    <a href="denunciasadmin.html" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-orange-50 hover:text-orange-700 rounded-xl transition nav-link"><i class="fas fa-exclamation-triangle w-5"></i><span>Denúncias</span><span id="badgeDenuncias" class="ml-auto bg-red-100 text-red-600 text-xs px-2 py-1 rounded-full">0</span></a>
+                    <a href="reclamacoesadmin.html" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-orange-50 hover:text-orange-700 rounded-xl transition nav-link"><i class="fas fa-flag w-5"></i><span>Reclamações</span><span id="badgeReclamacoes" class="ml-auto bg-yellow-100 text-yellow-600 text-xs px-2 py-1 rounded-full">0</span></a>
+                    <a href="usuarios.html" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-orange-50 hover:text-orange-700 rounded-xl transition nav-link"><i class="fas fa-users w-5"></i><span>Usuários</span><span id="badgeUsuarios" class="ml-auto bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">0</span></a>
+                    <a href="relatorioadmin.html" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-orange-50 hover:text-orange-700 rounded-xl transition nav-link"><i class="fas fa-chart-line w-5"></i><span>Relatórios</span></a>
                 </div>
-
                 <div class="mt-12 pt-6 border-t border-gray-200">
                     <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Configurações</p>
-                    
-                    <a href="perfil.html" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl transition">
-                        <i class="fas fa-user w-5"></i>
-                        <span>Meu Perfil</span>
-                    </a>
-                    
-                    <a href="configuracoes.html" class="flex items-center space-x-3 px-4 py-3 bg-gradient-to-r from-orange-50 to-orange-100 text-orange-700 rounded-xl font-medium nav-link border-l-4 border-orange-600">
-                        <i class="fas fa-cog w-5"></i>
-                        <span>Configurações</span>
-                    </a>
-                    
-                    <a href="#" onclick="logout()" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-red-50 hover:text-red-600 rounded-xl transition">
-                        <i class="fas fa-sign-out-alt w-5"></i>
-                        <span>Sair</span>
-                    </a>
+                    <a href="perfil.html" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl transition nav-link"><i class="fas fa-user w-5"></i><span>Meu Perfil</span></a>
+                    <a href="configuracoes.html" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-xl transition nav-link"><i class="fas fa-cog w-5"></i><span>Configurações</span></a>
+                    <a href="#" onclick="logout()" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-red-50 hover:text-red-600 rounded-xl transition"><i class="fas fa-sign-out-alt w-5"></i><span>Sair</span></a>
                 </div>
             </div>
         </aside>
 
-        <!-- Menu mobile -->
-        <div class="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
-            <div class="grid grid-cols-5 gap-1 p-2">
-                <a href="dashboardAdmin.html" class="flex flex-col items-center py-2 px-1 text-gray-500 hover:text-orange-600 transition">
-                    <i class="fas fa-tachometer-alt text-lg"></i>
-                    <span class="text-[10px] sm:text-xs mt-1">Dashboard</span>
-                </a>
-                <a href="denunciasadmin.html" class="flex flex-col items-center py-2 px-1 text-gray-500 hover:text-orange-600 transition">
-                    <i class="fas fa-exclamation-triangle text-lg"></i>
-                    <span class="text-[10px] sm:text-xs mt-1">Denúncias</span>
-                </a>
-                <a href="reclamacoesadmin.html" class="flex flex-col items-center py-2 px-1 text-gray-500 hover:text-orange-600 transition">
-                    <i class="fas fa-flag text-lg"></i>
-                    <span class="text-[10px] sm:text-xs mt-1">Reclamações</span>
-                </a>
-                <a href="usuarios.html" class="flex flex-col items-center py-2 px-1 text-gray-500 hover:text-orange-600 transition">
-                    <i class="fas fa-users text-lg"></i>
-                    <span class="text-[10px] sm:text-xs mt-1">Usuários</span>
-                </a>
-                <a href="configuracoes.html" class="flex flex-col items-center py-2 px-1 text-orange-600 bg-orange-50 rounded-lg">
-                    <i class="fas fa-cog text-lg"></i>
-                    <span class="text-[10px] sm:text-xs mt-1 font-medium">Conf</span>
-                </a>
-            </div>
-        </div>
-
-        <!-- Conteúdo principal -->
+        <!-- Main Content -->
         <div class="flex-1 lg:ml-64">
-            <div class="container mx-auto px-4 py-8 pb-24 lg:pb-8">
-                
-                <!-- Breadcrumb -->
-                <div class="flex items-center text-sm text-gray-500 mb-6">
-                    <a href="dashboardAdmin.html" class="hover:text-orange-600">Admin</a>
-                    <i class="fas fa-chevron-right mx-2 text-xs"></i>
-                    <span class="text-orange-600 font-medium">Configurações do Sistema</span>
-                </div>
-
-                <!-- Cabeçalho -->
+            <div class="container mx-auto px-4 py-8">
+                <!-- Header -->
                 <div class="mb-8">
                     <div class="flex items-center space-x-3 mb-2">
-                        <div class="h-8 w-2 bg-gradient-to-b from-orange-600 to-orange-800 rounded-full"></div>
+                        <div class="h-8 w-2 bg-gradient-to-b from-orange-500 to-orange-600 rounded-full"></div>
                         <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Configurações do Sistema</h1>
                     </div>
-                    <p class="text-gray-600 ml-5">Gerencie as configurações gerais do sistema de denúncias e reclamações</p>
+                    <p class="text-gray-600 ml-5">Gerencie todas as configurações do sistema de reclamações e denúncias</p>
                 </div>
 
-                <!-- Formulário de Configurações -->
-                <form id="configForm" class="space-y-6">
-                    
-                    <!-- ============================================ -->
-                    <!-- SEÇÃO 1: CONFIGURAÇÕES GERAIS -->
-                    <!-- ============================================ -->
-                    <div class="bg-white rounded-xl shadow-md overflow-hidden config-card">
-                        <div class="bg-gradient-to-r from-gray-700 to-gray-900 px-6 py-4">
-                            <div class="flex items-center space-x-3">
-                                <i class="fas fa-globe text-white text-xl"></i>
-                                <h2 class="text-xl font-bold text-white">Configurações Gerais</h2>
+                <form id="configForm">
+                    <!-- Configurações Gerais -->
+                    <div class="bg-white rounded-xl shadow-md p-6 mb-8 setting-card">
+                        <div class="flex items-center space-x-3 mb-6">
+                            <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-globe text-orange-600"></i>
                             </div>
+                            <h2 class="text-xl font-bold text-gray-800">Configurações Gerais</h2>
                         </div>
-                        <div class="p-6">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                                        <i class="fas fa-building text-orange-500 mr-2"></i>Nome do Sistema
-                                    </label>
-                                    <input type="text" id="nomeSistema" value="IPIL - Sistema de Reclamações e Denúncias" 
-                                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                                        <i class="fas fa-code-branch text-orange-500 mr-2"></i>Versão do Sistema
-                                    </label>
-                                    <input type="text" id="versaoSistema" value="2.0.0" readonly
-                                           class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-500 cursor-not-allowed">
-                                </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Nome do Sistema</label>
+                                <input type="text" id="nomeSistema" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
                             </div>
-                            
-                            <div class="mt-4 flex items-center justify-between py-3 border-t border-gray-200">
-                                <div>
-                                    <p class="font-medium text-gray-800">Modo de Manutenção</p>
-                                    <p class="text-sm text-gray-500">Quando ativado, apenas administradores podem acessar o sistema</p>
-                                </div>
-                                <label class="switch">
-                                    <input type="checkbox" id="modoManutencao">
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
-                            
-                            <div id="mensagemManutencaoDiv" class="mt-3 hidden">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Mensagem para usuários</label>
-                                <textarea id="mensagemManutencao" rows="2" 
-                                          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                                          placeholder="Sistema em manutenção. Voltaremos em breve!">Sistema em manutenção. Pedimos desculpa pelo incómodo. Voltaremos em breve!</textarea>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- ============================================ -->
-                    <!-- SEÇÃO 2: SEGURANÇA -->
-                    <!-- ============================================ -->
-                    <div class="bg-white rounded-xl shadow-md overflow-hidden config-card">
-                        <div class="bg-gradient-to-r from-gray-700 to-gray-900 px-6 py-4">
-                            <div class="flex items-center space-x-3">
-                                <i class="fas fa-shield-alt text-white text-xl"></i>
-                                <h2 class="text-xl font-bold text-white">Segurança</h2>
-                            </div>
-                        </div>
-                        <div class="p-6">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                                        <i class="fas fa-key text-orange-500 mr-2"></i>Tentativas máximas de login
-                                    </label>
-                                    <select id="maxTentativas" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
-                                        <option value="3">3 tentativas</option>
-                                        <option value="5" selected>5 tentativas</option>
-                                        <option value="10">10 tentativas</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                                        <i class="fas fa-clock text-orange-500 mr-2"></i>Tempo de bloqueio (minutos)
-                                    </label>
-                                    <select id="tempoBloqueio" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
-                                        <option value="15">15 minutos</option>
-                                        <option value="30" selected>30 minutos</option>
-                                        <option value="60">60 minutos</option>
-                                    </select>
-                                </div>
-                            </div>
-                            
-                            <div class="mt-4">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    <i class="fas fa-lock text-orange-500 mr-2"></i>Força mínima da senha
-                                </label>
-                                <select id="forcaSenha" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
-                                    <option value="fraca">Fraca (mínimo 4 caracteres)</option>
-                                    <option value="media" selected>Média (mínimo 6 caracteres, letras e números)</option>
-                                    <option value="forte">Forte (mínimo 8 caracteres, maiúsculas, minúsculas, números e símbolos)</option>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Tema do Sistema</label>
+                                <select id="tema" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500">
+                                    <option value="light">Claro</option>
+                                    <option value="dark">Escuro</option>
                                 </select>
                             </div>
-                            
-                            <div class="mt-4 flex items-center justify-between py-3 border-t border-gray-200">
-                                <div>
-                                    <p class="font-medium text-gray-800">Autenticação em Duas Etapas (2FA)</p>
-                                    <p class="text-sm text-gray-500">Requer código de verificação adicional ao fazer login</p>
-                                </div>
-                                <label class="switch">
-                                    <input type="checkbox" id="twoFactor">
-                                    <span class="slider"></span>
+                            <div class="col-span-2">
+                                <label class="flex items-center space-x-3 cursor-pointer">
+                                    <input type="checkbox" id="modoManutencao" class="w-4 h-4 text-orange-600 rounded focus:ring-orange-500">
+                                    <span class="text-sm font-medium text-gray-700">Ativar Modo Manutenção</span>
                                 </label>
-                            </div>
-                            
-                            <div class="mt-4 flex items-center justify-between py-3 border-t border-gray-200">
-                                <div>
-                                    <p class="font-medium text-gray-800">Logs de Atividade</p>
-                                    <p class="text-sm text-gray-500">Registrar todas as ações dos usuários no sistema</p>
+                                <div id="mensagemManutencaoDiv" class="mt-3 hidden">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Mensagem de Manutenção</label>
+                                    <textarea id="mensagemManutencao" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500"></textarea>
                                 </div>
-                                <label class="switch">
-                                    <input type="checkbox" id="logsAtividade" checked>
-                                    <span class="slider"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Segurança -->
+                    <div class="bg-white rounded-xl shadow-md p-6 mb-8 setting-card">
+                        <div class="flex items-center space-x-3 mb-6">
+                            <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-shield-alt text-red-600"></i>
+                            </div>
+                            <h2 class="text-xl font-bold text-gray-800">Segurança</h2>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Máx. Tentativas de Login</label>
+                                <input type="number" id="maxTentativas" min="3" max="10" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Tempo de Bloqueio (minutos)</label>
+                                <input type="number" id="tempoBloqueio" min="5" max="60" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Força Mínima da Senha</label>
+                                <select id="forcaSenha" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                                    <option value="fraca">Fraca (6+ caracteres)</option>
+                                    <option value="media">Média (8+ caracteres, letras e números)</option>
+                                    <option value="forte">Forte (8+ caracteres, maiúsculas, números, símbolos)</option>
+                                </select>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <input type="checkbox" id="twoFactor" class="w-4 h-4 text-orange-600 rounded">
+                                <label class="text-sm font-medium text-gray-700">Ativar Autenticação de Dois Fatores (2FA)</label>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <input type="checkbox" id="logsAtividade" class="w-4 h-4 text-orange-600 rounded">
+                                <label class="text-sm font-medium text-gray-700">Manter Logs de Atividade</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Anexos -->
+                    <div class="bg-white rounded-xl shadow-md p-6 mb-8 setting-card">
+                        <div class="flex items-center space-x-3 mb-6">
+                            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-paperclip text-blue-600"></i>
+                            </div>
+                            <h2 class="text-xl font-bold text-gray-800">Configurações de Anexos</h2>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Tamanho Máximo (MB)</label>
+                                <input type="number" id="maxAnexoTamanho" min="1" max="20" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Máx. Anexos por Submissão</label>
+                                <input type="number" id="maxAnexos" min="1" max="10" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                            </div>
+                            <div class="col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Tipos de Arquivo Permitidos</label>
+                                <div class="flex flex-wrap gap-4">
+                                    <label class="flex items-center"><input type="checkbox" value="jpg" class="tipoArquivo mr-2"> JPG</label>
+                                    <label class="flex items-center"><input type="checkbox" value="png" class="tipoArquivo mr-2"> PNG</label>
+                                    <label class="flex items-center"><input type="checkbox" value="pdf" class="tipoArquivo mr-2"> PDF</label>
+                                    <label class="flex items-center"><input type="checkbox" value="doc" class="tipoArquivo mr-2"> DOC</label>
+                                    <label class="flex items-center"><input type="checkbox" value="docx" class="tipoArquivo mr-2"> DOCX</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Categorias -->
+                    <div class="bg-white rounded-xl shadow-md p-6 mb-8 setting-card">
+                        <div class="flex items-center space-x-3 mb-6">
+                            <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-tags text-purple-600"></i>
+                            </div>
+                            <h2 class="text-xl font-bold text-gray-800">Categorias</h2>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Categorias Denúncias -->
+                            <div>
+                                <h3 class="font-semibold text-gray-800 mb-3">Categorias de Denúncias</h3>
+                                <div id="categoriasDenuncias" class="space-y-2 mb-3"></div>
+                                <div class="flex gap-2">
+                                    <input type="text" id="novaCategoriaDenuncia" placeholder="Nova categoria..." class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                    <button type="button" onclick="adicionarCategoria('denuncia')" class="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <!-- Categorias Reclamações -->
+                            <div>
+                                <h3 class="font-semibold text-gray-800 mb-3">Categorias de Reclamações</h3>
+                                <div id="categoriasReclamacoes" class="space-y-2 mb-3"></div>
+                                <div class="flex gap-2">
+                                    <input type="text" id="novaCategoriaReclamacao" placeholder="Nova categoria..." class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                    <button type="button" onclick="adicionarCategoria('reclamacao')" class="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Backup -->
+                    <div class="bg-white rounded-xl shadow-md p-6 mb-8 setting-card">
+                        <div class="flex items-center space-x-3 mb-6">
+                            <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-database text-green-600"></i>
+                            </div>
+                            <h2 class="text-xl font-bold text-gray-800">Backup</h2>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="flex items-center space-x-3 mb-4">
+                                    <input type="checkbox" id="backupAutomatico" class="w-4 h-4 text-orange-600 rounded">
+                                    <span class="text-sm font-medium text-gray-700">Ativar Backup Automático</span>
                                 </label>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Frequência</label>
+                                <select id="frequenciaBackup" class="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3">
+                                    <option value="daily">Diário</option>
+                                    <option value="weekly">Semanal</option>
+                                    <option value="monthly">Mensal</option>
+                                </select>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Horário</label>
+                                <input type="time" id="horarioBackup" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- ============================================ -->
-                    <!-- SEÇÃO 3: CONFIGURAÇÕES DE ANEXOS -->
-                    <!-- ============================================ -->
-                    <div class="bg-white rounded-xl shadow-md overflow-hidden config-card">
-                        <div class="bg-gradient-to-r from-gray-700 to-gray-900 px-6 py-4">
-                            <div class="flex items-center space-x-3">
-                                <i class="fas fa-paperclip text-white text-xl"></i>
-                                <h2 class="text-xl font-bold text-white">Configurações de Anexos</h2>
-                            </div>
-                        </div>
-                        <div class="p-6">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                                        <i class="fas fa-database text-orange-500 mr-2"></i>Tamanho máximo (MB)
-                                    </label>
-                                    <select id="maxAnexoTamanho" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
-                                        <option value="2">2 MB</option>
-                                        <option value="5" selected>5 MB</option>
-                                        <option value="10">10 MB</option>
-                                        <option value="20">20 MB</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                                        <i class="fas fa-cubes text-orange-500 mr-2"></i>Quantidade máxima por submissão
-                                    </label>
-                                    <select id="maxAnexos" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
-                                        <option value="3">3 anexos</option>
-                                        <option value="5" selected>5 anexos</option>
-                                        <option value="10">10 anexos</option>
-                                    </select>
-                                </div>
-                            </div>
-                            
-                            <div class="mt-4">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    <i class="fas fa-file-alt text-orange-500 mr-2"></i>Tipos de arquivo permitidos
-                                </label>
-                                <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
-                                    <label class="flex items-center space-x-2">
-                                        <input type="checkbox" value="jpg" checked class="tipoArquivo"> 
-                                        <span>JPG/JPEG</span>
-                                    </label>
-                                    <label class="flex items-center space-x-2">
-                                        <input type="checkbox" value="png" checked class="tipoArquivo"> 
-                                        <span>PNG</span>
-                                    </label>
-                                    <label class="flex items-center space-x-2">
-                                        <input type="checkbox" value="pdf" checked class="tipoArquivo"> 
-                                        <span>PDF</span>
-                                    </label>
-                                    <label class="flex items-center space-x-2">
-                                        <input type="checkbox" value="doc" checked class="tipoArquivo"> 
-                                        <span>DOC/DOCX</span>
-                                    </label>
-                                    <label class="flex items-center space-x-2">
-                                        <input type="checkbox" value="xls" class="tipoArquivo"> 
-                                        <span>XLS/XLSX</span>
-                                    </label>
-                                    <label class="flex items-center space-x-2">
-                                        <input type="checkbox" value="mp4" class="tipoArquivo"> 
-                                        <span>MP4</span>
-                                    </label>
-                                    <label class="flex items-center space-x-2">
-                                        <input type="checkbox" value="zip" class="tipoArquivo"> 
-                                        <span>ZIP/RAR</span>
-                                    </label>
-                                    <label class="flex items-center space-x-2">
-                                        <input type="checkbox" value="txt" class="tipoArquivo"> 
-                                        <span>TXT</span>
-                                    </label>
+                            <div>
+                                <p id="ultimoBackupInfo" class="text-sm text-gray-500 mb-4"></p>
+                                <div class="flex gap-3">
+                                    <button type="button" onclick="gerarBackup()" class="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition">
+                                        <i class="fas fa-download mr-2"></i>Gerar Backup
+                                    </button>
+                                    <button type="button" onclick="restaurarBackup()" class="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
+                                        <i class="fas fa-upload mr-2"></i>Restaurar
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- ============================================ -->
-                    <!-- SEÇÃO 4: PRAZOS E NOTIFICAÇÕES -->
-                    <!-- ============================================ -->
-                    <div class="bg-white rounded-xl shadow-md overflow-hidden config-card">
-                        <div class="bg-gradient-to-r from-gray-700 to-gray-900 px-6 py-4">
-                            <div class="flex items-center space-x-3">
-                                <i class="fas fa-clock text-white text-xl"></i>
-                                <h2 class="text-xl font-bold text-white">Prazos e Notificações</h2>
-                            </div>
-                        </div>
-                        <div class="p-6">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                                        <i class="fas fa-gavel text-orange-500 mr-2"></i>Prazo resposta Denúncias (horas)
-                                    </label>
-                                    <input type="number" id="prazoDenuncias" value="48" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                                        <i class="fas fa-flag text-orange-500 mr-2"></i>Prazo resposta Reclamações (horas)
-                                    </label>
-                                    <input type="number" id="prazoReclamacoes" value="24" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
-                                </div>
-                            </div>
-                            
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                                        <i class="fas fa-archive text-orange-500 mr-2"></i>Arquivamento automático (dias)
-                                    </label>
-                                    <select id="arquivamentoAutomatico" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
-                                        <option value="30">30 dias</option>
-                                        <option value="60">60 dias</option>
-                                        <option value="90" selected>90 dias</option>
-                                        <option value="180">180 dias</option>
-                                        <option value="0">Nunca</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                                        <i class="fas fa-trash-alt text-orange-500 mr-2"></i>Exclusão automática (dias)
-                                    </label>
-                                    <select id="exclusaoAutomatica" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
-                                        <option value="365">1 ano</option>
-                                        <option value="730">2 anos</option>
-                                        <option value="0" selected>Nunca</option>
-                                    </select>
-                                </div>
-                            </div>
-                            
-                            <div class="mt-6 pt-4 border-t border-gray-200">
-                                <h3 class="text-md font-semibold text-gray-800 mb-3">Notificações por E-mail</h3>
-                                <div class="space-y-3">
-                                    <div class="flex items-center justify-between">
-                                        <div>
-                                            <p class="font-medium text-gray-800">Novas Denúncias</p>
-                                            <p class="text-sm text-gray-500">Receber email quando uma nova denúncia for registrada</p>
-                                        </div>
-                                        <label class="switch">
-                                            <input type="checkbox" id="notifDenuncias" checked>
-                                            <span class="slider"></span>
-                                        </label>
-                                    </div>
-                                    <div class="flex items-center justify-between">
-                                        <div>
-                                            <p class="font-medium text-gray-800">Novas Reclamações</p>
-                                            <p class="text-sm text-gray-500">Receber email quando uma nova reclamação for registrada</p>
-                                        </div>
-                                        <label class="switch">
-                                            <input type="checkbox" id="notifReclamacoes" checked>
-                                            <span class="slider"></span>
-                                        </label>
-                                    </div>
-                                    <div class="flex items-center justify-between">
-                                        <div>
-                                            <p class="font-medium text-gray-800">Novos Usuários</p>
-                                            <p class="text-sm text-gray-500">Receber email quando um novo usuário se cadastrar</p>
-                                        </div>
-                                        <label class="switch">
-                                            <input type="checkbox" id="notifUsuarios">
-                                            <span class="slider"></span>
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- ============================================ -->
-                    <!-- SEÇÃO 5: CATEGORIAS -->
-                    <!-- ============================================ -->
-                    <div class="bg-white rounded-xl shadow-md overflow-hidden config-card">
-                        <div class="bg-gradient-to-r from-gray-700 to-gray-900 px-6 py-4">
-                            <div class="flex items-center space-x-3">
-                                <i class="fas fa-tags text-white text-xl"></i>
-                                <h2 class="text-xl font-bold text-white">Categorias</h2>
-                            </div>
-                        </div>
-                        <div class="p-6">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <h3 class="text-md font-semibold text-gray-800 mb-3 flex items-center">
-                                        <i class="fas fa-exclamation-triangle text-orange-500 mr-2"></i>Denúncias
-                                    </h3>
-                                    <div id="categoriasDenuncias" class="space-y-2">
-                                        <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                                            <span>Infraestrutura</span>
-                                            <button type="button" class="text-red-500 hover:text-red-700">🗑️</button>
-                                        </div>
-                                        <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                                            <span>Saúde</span>
-                                            <button type="button" class="text-red-500 hover:text-red-700">🗑️</button>
-                                        </div>
-                                        <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                                            <span>Educação</span>
-                                            <button type="button" class="text-red-500 hover:text-red-700">🗑️</button>
-                                        </div>
-                                    </div>
-                                    <div class="mt-3 flex gap-2">
-                                        <input type="text" id="novaCategoriaDenuncia" placeholder="Nova categoria" class="flex-1 px-3 py-2 border rounded-lg">
-                                        <button type="button" onclick="adicionarCategoria('denuncia')" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">+</button>
-                                    </div>
-                                </div>
-                                <div>
-                                    <h3 class="text-md font-semibold text-gray-800 mb-3 flex items-center">
-                                        <i class="fas fa-flag text-orange-500 mr-2"></i>Reclamações
-                                    </h3>
-                                    <div id="categoriasReclamacoes" class="space-y-2">
-                                        <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                                            <span>Infraestrutura</span>
-                                            <button type="button" class="text-red-500 hover:text-red-700">🗑️</button>
-                                        </div>
-                                        <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                                            <span>Saúde</span>
-                                            <button type="button" class="text-red-500 hover:text-red-700">🗑️</button>
-                                        </div>
-                                        <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                                            <span>Educação</span>
-                                            <button type="button" class="text-red-500 hover:text-red-700">🗑️</button>
-                                        </div>
-                                    </div>
-                                    <div class="mt-3 flex gap-2">
-                                        <input type="text" id="novaCategoriaReclamacao" placeholder="Nova categoria" class="flex-1 px-3 py-2 border rounded-lg">
-                                        <button type="button" onclick="adicionarCategoria('reclamacao')" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">+</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- ============================================ -->
-                    <!-- SEÇÃO 6: BACKUP E SEGURANÇA -->
-                    <!-- ============================================ -->
-                    <div class="bg-white rounded-xl shadow-md overflow-hidden config-card">
-                        <div class="bg-gradient-to-r from-gray-700 to-gray-900 px-6 py-4">
-                            <div class="flex items-center space-x-3">
-                                <i class="fas fa-database text-white text-xl"></i>
-                                <h2 class="text-xl font-bold text-white">Backup e Segurança de Dados</h2>
-                            </div>
-                        </div>
-                        <div class="p-6">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                                        <i class="fas fa-calendar-week text-orange-500 mr-2"></i>Frequência de Backup
-                                    </label>
-                                    <select id="frequenciaBackup" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
-                                        <option value="daily">Diário</option>
-                                        <option value="weekly" selected>Semanal</option>
-                                        <option value="monthly">Mensal</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                                        <i class="fas fa-clock text-orange-500 mr-2"></i>Horário do Backup
-                                    </label>
-                                    <input type="time" id="horarioBackup" value="02:00" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
-                                </div>
-                            </div>
-                            <div class="mt-6 flex gap-4">
-                                <button type="button" onclick="gerarBackup()" class="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-                                    <i class="fas fa-download mr-2"></i>Exportar Backup
-                                </button>
-                                <button type="button" onclick="restaurarBackup()" class="flex-1 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">
-                                    <i class="fas fa-upload mr-2"></i>Restaurar Backup
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Botões de Ação -->
-                    <div class="flex flex-col sm:flex-row gap-4 sticky bottom-0 bg-white p-4 rounded-xl shadow-lg -mb-4">
-                        <button type="submit" class="flex-1 px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg font-semibold hover:from-orange-600 hover:to-orange-700 transition transform hover:-translate-y-1 shadow-md">
-                            <i class="fas fa-save mr-2"></i>Salvar todas as configurações
+                    <!-- Ações -->
+                    <div class="flex gap-4 justify-end mb-8">
+                        <button type="button" onclick="resetConfiguracoes()" class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium">
+                            <i class="fas fa-undo mr-2"></i>Restaurar Padrão
                         </button>
-                        <button type="button" onclick="resetConfiguracoes()" class="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition">
-                            <i class="fas fa-undo-alt mr-2"></i>Restaurar padrão
+                        <button type="submit" class="px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 transition font-medium shadow-lg">
+                            <i class="fas fa-save mr-2"></i>Salvar Configurações
                         </button>
                     </div>
-
                 </form>
 
-                <!-- Rodapé -->
-                <footer class="mt-12 text-center text-gray-500 text-sm">
+                <footer class="mt-12 text-center text-gray-500 text-sm pb-8">
                     <p>© 2026 Instituto Politécnico Industrial de Luanda - IPIL</p>
-                    <p class="mt-1">Sistema de Gestão de Denúncias e Reclamações</p>
+                    <p class="mt-1">Versão 2.0.0</p>
                 </footer>
             </div>
         </div>
     </div>
 
-    <script src="configuracoes.js"></script>
+    <script src="../shared/profile.js"></script>
+    <script src="./configuracoes.js"></script>
 </body>
 </html>

@@ -224,7 +224,7 @@ async function showDetailsModal(reclamacao) {
     const statusColor = statusCores[reclamacao.status] || statusCores.aberta;
     const dataCriacao = new Date(reclamacao.createdAt).toLocaleString('pt-PT');
     const dataAtualizacao = new Date(reclamacao.updatedAt).toLocaleString('pt-PT');
-    const anexos = await buscarAnexos(null, reclamacao.id);
+    // Não incluir anexos no modal de detalhes conforme solicitado.
     
     const modalContent = `
         <div class="space-y-4">
@@ -276,7 +276,6 @@ async function showDetailsModal(reclamacao) {
                     <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">${escapeHtml(reclamacao.descricao)}</p>
                 </div>
             </div>
-            ${renderAnexosHtml(anexos)}
         </div>
     `;
     
@@ -387,7 +386,7 @@ function verificarAdmin() {
     const usuario = JSON.parse(usuarioLogado);
     if (usuario.tipo !== 'admin') {
         showModal('Acesso Negado', 'Apenas administradores podem acessar esta página.', 'error', () => {
-            window.location.href = '../aluno/dashboard.html';
+            window.location.href = '../usuario/dashboard.html';
         });
         return null;
     }

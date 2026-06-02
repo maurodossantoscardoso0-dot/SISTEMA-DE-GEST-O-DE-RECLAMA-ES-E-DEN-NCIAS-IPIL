@@ -1191,8 +1191,10 @@ async function init() {
 
     const adminAvatarElement = document.getElementById('adminAvatar');
     if (adminAvatarElement) {
-        const nomeParts = admin.nome ? admin.nome.trim().split(' ') : [];
-        const initials = nomeParts.length === 0 ? 'AD' : nomeParts.map(part => part[0].toUpperCase()).slice(0, 2).join('');
+        const partes = admin.nome ? admin.nome.trim().split(/\s+/).filter(Boolean) : [];
+        const initials = partes.length > 1
+            ? (partes[0][0] + partes[partes.length - 1][0]).toUpperCase()
+            : (partes[0] || 'A').substring(0, 2).toUpperCase();
         adminAvatarElement.innerText = initials;
     }
     

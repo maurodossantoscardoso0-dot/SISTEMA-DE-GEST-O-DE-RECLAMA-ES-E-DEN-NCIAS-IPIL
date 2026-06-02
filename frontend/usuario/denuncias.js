@@ -154,7 +154,10 @@ function checkAuth() {
 
 function getInitials(nome) {
     if (!nome) return 'U';
-    return nome.split(' ').map(word => word[0]).join('').toUpperCase().substring(0, 2);
+    const partes = nome.trim().split(/\s+/).filter(Boolean);
+    if (partes.length === 0) return 'U';
+    if (partes.length === 1) return partes[0].substring(0, 2).toUpperCase();
+    return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
 }
 
 function formatDate(data) {
@@ -492,9 +495,6 @@ function filtrarDenuncias() {
 async function verDetalhes(id) {
     const denuncia = denuncias.find(d => d.id === id);
     if (!denuncia) return;
-
-    const anexos = await buscarAnexos(denuncia.id, null);
-    const anexosHtml = renderAnexosHtml(anexos.length > 0 ? anexos : denuncia.anexos || []);
 
     const modalHtml = `
         <div class="space-y-3">

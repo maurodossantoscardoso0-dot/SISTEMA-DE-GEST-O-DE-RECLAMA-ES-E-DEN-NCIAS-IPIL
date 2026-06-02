@@ -47,101 +47,191 @@ function validarCampo(input, tipo, warningIcon, errorMsg) {
 
 // Função para validar o formulário completo
 function validarFormulario(dados) {
-    // Validar nome (apenas letras e espaços)
     if (!validarApenasLetrasEspacos(dados.nome)) {
-        alert(' Nome inválido! Use apenas letras e espaços.');
+        alert('⚠️ Nome inválido! Use apenas letras e espaços.');
         return false;
     }
     
-    // Validar curso (não pode estar vazio)
     if (!dados.curso) {
-        alert(' Por favor, selecione um curso.');
+        alert('⚠️ Por favor, selecione um curso.');
         return false;
     }
     
-    // Validar turma (apenas letras e números)
     if (!validarApenasLetrasNumeros(dados.turma)) {
-        alert(' Turma inválida! Use apenas letras e números.');
+        alert('⚠️ Turma inválida! Use apenas letras e números.');
         return false;
     }
     
-    // Validar sala (apenas letras e números)
     if (!validarApenasLetrasNumeros(dados.sala)) {
-        alert(' Sala inválida! Use apenas letras e números.');
+        alert('⚠️ Sala inválida! Use apenas letras e números.');
         return false;
     }
     
-    // Validar email
     if (!validarEmail(dados.email)) {
-        alert(' Email inválido! Digite um email válido (ex: usuario@dominio.com).');
+        alert('⚠️ Email inválido! Digite um email válido (ex: usuario@dominio.com).');
         return false;
     }
     
-    // Validar telefone (9 dígitos)
     if (!validarTelefone(dados.telefone)) {
-        alert(' Telefone inválido! O telefone deve conter exatamente 9 dígitos numéricos.');
+        alert('⚠️ Telefone inválido! O telefone deve conter exatamente 9 dígitos numéricos.');
         return false;
     }
     
-    // Validar senha (mínimo 6 caracteres)
     if (dados.senha.length < 6) {
-        alert(' Senha inválida! A senha deve ter no mínimo 6 caracteres.');
+        alert('⚠️ Senha inválida! A senha deve ter no mínimo 6 caracteres.');
         return false;
     }
     
-    // Validar confirmação de senha
     if (dados.senha !== dados.confirmarSenha) {
-        alert(' As senhas não coincidem!');
+        alert('⚠️ As senhas não coincidem!');
         return false;
     }
     
     return true;
 }
 
-// Função de cadastro de usuário
+// Função de cadastro de usuário (CORRIGIDA)
 async function cadastrarUsuario(dados) {
     try {
-        const formData = new FormData();
-        formData.append('nome', dados.nome);
-        formData.append('email', dados.email);
-        formData.append('nascimento', dados.nascimento);
-        formData.append('sexo', dados.sexo);
-        formData.append('senha', dados.senha);
-        formData.append('telefone', dados.telefone);
-        formData.append('curso', dados.curso);
-        formData.append('processo', dados.processo);
-        formData.append('classe', dados.classe);
-        formData.append('turma', dados.turma);
-        formData.append('sala', dados.sala);
-        
-        // Se tiver foto, adiciona
-        if (dados.foto) {
-            formData.append('foto', dados.foto);
-        }
+        const payload = {
+            nome: dados.nome,
+            email: dados.email,
+            nascimento: dados.nascimento,
+            sexo: dados.sexo,
+            senha: dados.senha,
+            telefone: dados.telefone,
+            curso: dados.curso,
+            numero_processo: dados.processo,
+            classe: dados.classe,
+            turma: dados.turma.toUpperCase(),
+            sala: dados.sala.toUpperCase()
+        };
 
-        const resposta = await fetch('http://localhost:3000/api/auth/registro', {
+        console.log('📤 Enviando dados para API:', payload);
+
+        const resposta = await fetch('/api/usuarios', {
             method: 'POST',
-            body: formData
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
         });
 
         const dadosResposta = await resposta.json();
         
-        if (dadosResposta.sucesso) {
-            console.log(' Cadastro realizado:', dadosResposta.usuario);
-            localStorage.setItem('token', dadosResposta.token);
-            return dadosResposta;
+        console.log('📥 Resposta da API:', dadosResposta);
+        
+        if (dadosResposta.success) {
+            console.log('✅ Cadastro realizado com sucesso!');
+            const usuarioCriado = dadosResposta.data || dadosResposta.usuario || {};
+            
+            // 🔥 SALVAR DADOS DO USUÁRIO NO SESSIONSTORAGE
+            const usuarioData = {
+                id: usuarioCriado.id || dadosResposta.id,
+                nome: usuarioCriado.nome || dados.nome,
+                email: usuarioCriado.email || dados.email,
+                numero_processo: usuarioCriado.numero_processo || dados.processo,
+                tipo: usuarioCriado.tipo || 'usuario',
+                data_cadastro: new Date().toISOString()
+            };
+            
+            sessionStorage.setItem('usuarioLogado', JSON.stringify(usuarioData));
+            
+            // Verificar se foi salvo corretamente
+            const savedUser = sessionStorage.getItem('usuarioLogado');
+            console.log('💾 Usuário salvo no sessionStorage:', savedUser);
+            
+            return { success: true, usuario: usuarioData };
         } else {
-            console.error(' Erro:', dadosResposta.erro);
-            throw new Error(dadosResposta.erro);
+            throw new Error(dadosResposta.error || 'Erro ao realizar cadastro');
         }
     } catch (erro) {
-        console.error('Erro na requisição:', erro);
+        console.error('❌ Erro na requisição:', erro);
         throw erro;
     }
 }
 
+// Função para mostrar modal de sucesso
+function showSuccessModal(message, redirectUrl) {
+    // Criar modal personalizado
+    const modal = document.createElement('div');
+    modal.id = 'successModal';
+    modal.className = 'fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4';
+    modal.style.animation = 'fadeIn 0.3s ease';
+    
+    modal.innerHTML = `
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden" style="animation: slideIn 0.3s ease;">
+            <div class="bg-gradient-to-r from-green-500 to-green-600 px-6 py-4">
+                <div class="flex items-center space-x-3">
+                    <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg">
+                        <i class="fas fa-check-circle text-green-500 text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white">Cadastro Realizado!</h3>
+                </div>
+            </div>
+            <div class="px-6 py-6 text-center">
+                <i class="fas fa-smile-wink text-green-500 text-5xl mb-4"></i>
+                <p class="text-gray-700 text-base mb-2">${message}</p>
+                <p class="text-gray-500 text-sm">Redirecionando para o dashboard...</p>
+            </div>
+            <div class="px-6 py-4 bg-gray-50 flex justify-center">
+                <div class="w-8 h-8 border-4 border-orange-200 border-t-orange-600 rounded-full animate-spin"></div>
+            </div>
+        </div>
+    `;
+    
+    // Adicionar estilos se não existirem
+    if (!document.getElementById('modalStyles')) {
+        const style = document.createElement('style');
+        style.id = 'modalStyles';
+        style.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            @keyframes slideIn {
+                from { transform: translateY(-50px); opacity: 0; }
+                to { transform: translateY(0); opacity: 1; }
+            }
+            @keyframes spin {
+                to { transform: rotate(360deg); }
+            }
+            .animate-spin {
+                animation: spin 1s linear infinite;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    document.body.appendChild(modal);
+    
+    // Redirecionar após 2 segundos
+    setTimeout(() => {
+        if (typeof redirecionarParaDashboard === 'function') {
+            redirecionarParaDashboard();
+        } else {
+            window.location.href = redirectUrl || './dashboard.html';
+        }
+    }, 2000);
+}
+
 // Inicialização quando o DOM estiver carregado
 document.addEventListener('DOMContentLoaded', function() {
+    
+    // Verificar se já está logado, se sim redirecionar para dashboard
+    const usuarioLogado = sessionStorage.getItem('usuarioLogado');
+    if (usuarioLogado) {
+        try {
+            const usuario = JSON.parse(usuarioLogado);
+            if (usuario && usuario.nome) {
+                console.log('✅ Usuário já está logado:', usuario.nome);
+                window.location.href = './dashboard.html';
+                return;
+            }
+        } catch(e) {
+            console.log('Erro ao verificar usuário logado');
+        }
+    }
     
     // Elementos do formulário
     const nomeInput = document.getElementById('nome');
@@ -163,7 +253,6 @@ document.addEventListener('DOMContentLoaded', function() {
             validarCampo(nomeInput, 'letrasEspacos', nomeWarning, nomeError);
         });
         
-        // Prevenir colagem de caracteres inválidos
         nomeInput.addEventListener('paste', function(e) {
             e.preventDefault();
             const pastedText = (e.clipboardData || window.clipboardData).getData('text');
@@ -171,7 +260,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.value = pastedText;
                 validarCampo(this, 'letrasEspacos', nomeWarning, nomeError);
             } else {
-                alert(' Não é permitido colar caracteres especiais ou números neste campo!');
+                alert('⚠️ Não é permitido colar caracteres especiais ou números neste campo!');
             }
         });
     }
@@ -186,10 +275,10 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             const pastedText = (e.clipboardData || window.clipboardData).getData('text');
             if (validarApenasLetrasNumeros(pastedText)) {
-                this.value = pastedText;
+                this.value = pastedText.toUpperCase();
                 validarCampo(this, 'letrasNumeros', turmaWarning, turmaError);
             } else {
-                alert(' Não é permitido colar caracteres especiais neste campo! Use apenas letras e números.');
+                alert('⚠️ Não é permitido colar caracteres especiais neste campo! Use apenas letras e números.');
             }
         });
     }
@@ -204,10 +293,10 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             const pastedText = (e.clipboardData || window.clipboardData).getData('text');
             if (validarApenasLetrasNumeros(pastedText)) {
-                this.value = pastedText;
+                this.value = pastedText.toUpperCase();
                 validarCampo(this, 'letrasNumeros', salaWarning, salaError);
             } else {
-                alert(' Não é permitido colar caracteres especiais neste campo! Use apenas letras e números.');
+                alert('⚠️ Não é permitido colar caracteres especiais neste campo! Use apenas letras e números.');
             }
         });
     }
@@ -230,12 +319,13 @@ document.addEventListener('DOMContentLoaded', function() {
         togglePassword.addEventListener('click', function() {
             const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
             passwordInput.setAttribute('type', type);
-            this.querySelector('i').classList.toggle('fa-eye');
-            this.querySelector('i').classList.toggle('fa-eye-slash');
+            const icon = this.querySelector('i');
+            icon.classList.toggle('fa-eye');
+            icon.classList.toggle('fa-eye-slash');
         });
     }
     
-    // Envio do formulário
+    // Envio do formulário (CORRIGIDO)
     if (form) {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -252,15 +342,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 curso: document.getElementById('curso').value,
                 processo: document.getElementById('processo').value,
                 classe: document.getElementById('classe').value,
-                turma: document.getElementById('turma').value.trim().toUpperCase(),
-                sala: document.getElementById('sala').value.trim().toUpperCase(),
+                turma: document.getElementById('turma').value.trim(),
+                sala: document.getElementById('sala').value.trim(),
                 foto: document.getElementById('foto')?.files[0]
             };
             
             // Validar termos
             const termsCheckbox = document.getElementById('terms');
             if (!termsCheckbox.checked) {
-                alert(' Você deve aceitar os termos e condições para continuar!');
+                alert('⚠️ Você deve aceitar os termos e condições para continuar!');
                 return;
             }
             
@@ -277,10 +367,17 @@ document.addEventListener('DOMContentLoaded', function() {
             
             try {
                 const resultado = await cadastrarUsuario(dados);
-                alert(' Cadastro realizado com sucesso!');
-                window.location.href = './dashboard.html';
+                
+                if (resultado.success) {
+                    // Redirecionar imediatamente para o dashboard
+                    window.location.href = './dashboard.html';
+                    return;
+                } else {
+                    throw new Error('Erro ao criar conta');
+                }
+                
             } catch (erro) {
-                alert(' Erro ao cadastrar: ' + erro.message);
+                alert('❌ Erro ao cadastrar: ' + erro.message);
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalText;
             }
@@ -293,7 +390,6 @@ function bloquearTeclasInvalidas(event, tipo) {
     const tecla = event.key;
     
     if (tipo === 'letrasEspacos') {
-        // Permitir apenas letras, espaços, backspace, delete, tab, enter, etc.
         const regex = /^[A-Za-zÀ-ÿ\s]$/;
         if (!regex.test(tecla) && 
             tecla !== 'Backspace' && 
@@ -310,7 +406,6 @@ function bloquearTeclasInvalidas(event, tipo) {
             return false;
         }
     } else if (tipo === 'letrasNumeros') {
-        // Permitir apenas letras, números, backspace, delete, tab, enter, etc.
         const regex = /^[A-Za-z0-9]$/;
         if (!regex.test(tecla) && 
             tecla !== 'Backspace' && 

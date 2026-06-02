@@ -391,11 +391,7 @@
                     
                     <!-- Lado direito: BOTÕES DE DOWNLOAD -->
                     <div class="flex space-x-2 sm:space-x-3">
-                        <!-- Botão PDF - chama função gerarPDF() -->
-                        <button id="gerarPDFBtn" class="btn-download flex items-center space-x-1 sm:space-x-2 px-3 sm:px-5 py-1.5 sm:py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition shadow-md text-xs sm:text-sm">
-                            <i class="fas fa-file-pdf text-sm sm:text-lg"></i> <!-- Ícone PDF -->
-                            <span class="font-medium">PDF</span>
-                        </button>
+                      
                         <!-- Botão Excel - chama função gerarExcel() -->
                         <button id="gerarExcelBtn" class="btn-download flex items-center space-x-1 sm:space-x-2 px-3 sm:px-5 py-1.5 sm:py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-md text-xs sm:text-sm">
                             <i class="fas fa-file-excel text-sm sm:text-lg"></i> <!-- Ícone Excel -->
@@ -471,10 +467,6 @@
                         <h3 class="text-base sm:text-lg font-bold text-white">Distribuição por Categoria</h3>
                         <!-- Botões de download dentro da tabela -->
                         <div class="flex space-x-3">
-                            <button onclick="gerarPDF()" class="text-white hover:text-orange-200 transition text-xs sm:text-sm flex items-center space-x-1">
-                                <i class="fas fa-file-pdf"></i>
-                                <span>PDF</span>
-                            </button>
                             <button onclick="gerarExcel()" class="text-white hover:text-orange-200 transition text-xs sm:text-sm flex items-center space-x-1">
                                 <i class="fas fa-file-excel"></i>
                                 <span>Excel</span>
@@ -523,6 +515,7 @@
     <!-- ============================================ -->
     <!-- SCRIPTS (JavaScript) -->
     <!-- ============================================ -->
+    <script src="../shared/profile.js"></script>
     <script src="relatorioadmin.js"></script>
     <script src="admin-dropdown.js"></script>
     <!-- Arquivo JavaScript externo contendo toda a lógica da página -->

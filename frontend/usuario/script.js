@@ -1,5 +1,4 @@
 // Modal de notificação estilizado
-
 function showModal(type, title, message, onConfirm = null) {
     const existingModal = document.getElementById('customModal');
     if (existingModal) existingModal.remove();
@@ -79,7 +78,6 @@ function showModal(type, title, message, onConfirm = null) {
     }
 }
 
-
 // Toast de notificações
 function mostrarNotificacao(mensagem, tipo = 'success') {
     const existingToast = document.getElementById('customToast');
@@ -107,9 +105,7 @@ function mostrarNotificacao(mensagem, tipo = 'success') {
     }, 3000);
 }
 
-
 // Loading overlay
-
 function showLoading(show, message = 'Processando...') {
     let overlay = document.getElementById('loadingOverlay');
     
@@ -156,44 +152,36 @@ function validarTelefone(telefone) {
     return regex.test(telefone);
 }
 
-
 // Validação de data de nascimento (1976 a 2010)
 function validarDataNascimento(dataNascimento) {
     if (!dataNascimento) {
-        return { valido: false, mensagem: ' A data de nascimento é obrigatória.' };
+        return { valido: false, mensagem: '⚠️ A data de nascimento é obrigatória.' };
     }
     
     const data = new Date(dataNascimento);
     const hoje = new Date();
     const dataAtual = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
     
-    // Verificar se a data é válida
     if (isNaN(data.getTime())) {
-        return { valido: false, mensagem: ' Data de nascimento inválida. Use o formato DD/MM/AAAA.' };
+        return { valido: false, mensagem: '⚠️ Data de nascimento inválida. Use o formato DD/MM/AAAA.' };
     }
     
-    // Verificar se a data não é futura
     if (data > dataAtual) {
-        return { valido: false, mensagem: ' Data de nascimento não pode ser no futuro!' };
+        return { valido: false, mensagem: '⚠️ Data de nascimento não pode ser no futuro!' };
     }
     
-    // Obter o ano de nascimento
     const anoNascimento = data.getFullYear();
-    
-    // DEFINIR LIMITES: 1976 a 2010 (inclusive)
     const ANO_MINIMO = 1976;
     const ANO_MAXIMO = 2010;
     
-    // Verificar se o ano está dentro do intervalo permitido
     if (anoNascimento < ANO_MINIMO) {
         return { 
             valido: false, 
-            mensagem: ` Ano de nascimento inválido! Apenas pessoas nascidas a partir de ${ANO_MINIMO} podem se cadastrar. (Ano informado: ${anoNascimento})` 
+            mensagem: `⚠️ Ano de nascimento inválido! Apenas pessoas nascidas a partir de ${ANO_MINIMO} podem se cadastrar. (Ano informado: ${anoNascimento})` 
         };
     }
     
     if (anoNascimento > ANO_MAXIMO) {
-        // Calcular idade para mostrar uma mensagem mais amigável
         let idade = hoje.getFullYear() - anoNascimento;
         const mesAtual = hoje.getMonth();
         const diaAtual = hoje.getDate();
@@ -206,11 +194,10 @@ function validarDataNascimento(dataNascimento) {
         
         return { 
             valido: false, 
-            mensagem: ` Ano de nascimento inválido! Apenas pessoas com até ${ANO_MAXIMO + 1} anos podem se cadastrar. (Você aparenta ter ${idade} anos. Ano informado: ${anoNascimento})` 
+            mensagem: `⚠️ Ano de nascimento inválido! Apenas pessoas com até ${ANO_MAXIMO + 1} anos podem se cadastrar. (Você aparenta ter ${idade} anos. Ano informado: ${anoNascimento})` 
         };
     }
     
-    // Calcular idade atual
     let idade = hoje.getFullYear() - anoNascimento;
     const mesAtual = hoje.getMonth();
     const diaAtual = hoje.getDate();
@@ -221,7 +208,6 @@ function validarDataNascimento(dataNascimento) {
         idade--;
     }
     
-    // Calcular meses e dias para informação detalhada
     let meses = mesAtual - mesNascimento;
     let dias = diaAtual - diaNascimento;
     
@@ -237,7 +223,7 @@ function validarDataNascimento(dataNascimento) {
     
     return { 
         valido: true, 
-        mensagem: ` Cadastro permitido! Ano de nascimento: ${anoNascimento} (${idade} anos, ${meses} meses e ${dias} dias)`,
+        mensagem: `✅ Cadastro permitido! Ano de nascimento: ${anoNascimento} (${idade} anos, ${meses} meses e ${dias} dias)`,
         idade: idade,
         meses: meses,
         dias: dias,
@@ -246,7 +232,6 @@ function validarDataNascimento(dataNascimento) {
 }
 
 // Função para validar campo em tempo real
-
 function validarCampo(input, tipo, warningIcon, errorMsg) {
     let valor = input.value.trim();
     let valido = false;
@@ -273,12 +258,10 @@ function validarCampo(input, tipo, warningIcon, errorMsg) {
 }
 
 // Verificar a força da senha
-
 function verificarForcaSenha(senha) {
     let forca = 0;
     let mensagem = '';
     
-    // Critérios de força
     if (senha.length >= 8) forca++;
     if (senha.match(/[a-z]/) && senha.match(/[A-Z]/)) forca++;
     if (senha.match(/[0-9]/)) forca++;
@@ -297,88 +280,73 @@ function verificarForcaSenha(senha) {
 }
 
 // Validação do formulário completo (com modais)
-
 async function validarFormulario(dados) {
-    // Validar nome (apenas letras e espaços)
     if (!dados.nome || !validarApenasLetrasEspacos(dados.nome)) {
         showModal('error', 'Nome Inválido', 'Use apenas letras e espaços no campo nome.');
         return false;
     }
     
-    // Validar nome completo (mínimo 2 palavras)
     if (dados.nome.trim().split(' ').length < 2) {
         showModal('error', 'Nome Incompleto', 'Por favor, informe seu nome completo (nome e sobrenome).');
         return false;
     }
     
-    // Validar data de nascimento (apenas 1976 a 2010)
     const validacaoData = validarDataNascimento(dados.nascimento);
     if (!validacaoData.valido) {
         showModal('error', 'Data de Nascimento Inválida', validacaoData.mensagem);
         return false;
     }
     
-    // Validar curso (não pode estar vazio)
     if (!dados.curso) {
         showModal('error', 'Curso não selecionado', 'Por favor, selecione um curso para continuar.');
         return false;
     }
     
-    // Validar classe (não pode estar vazia)
     if (!dados.classe) {
         showModal('error', 'Classe não selecionada', 'Por favor, selecione a classe para continuar.');
         return false;
     }
     
-    // Validar turma (apenas letras e números)
     if (!dados.turma || !validarApenasLetrasNumeros(dados.turma)) {
         showModal('error', 'Turma Inválida', 'Use apenas letras e números no campo turma. Ex: IG12A');
         return false;
     }
     
-    // Validar turma (tamanho mínimo)
     if (dados.turma.length < 3) {
         showModal('error', 'Turma Inválida', 'A turma deve ter pelo menos 3 caracteres. Ex: IG12A');
         return false;
     }
     
-    // Validar sala (apenas letras e números)
     if (!dados.sala || !validarApenasLetrasNumeros(dados.sala)) {
         showModal('error', 'Sala Inválida', 'Use apenas letras e números no campo sala. Ex: 101, A1, LAB2');
         return false;
     }
     
-    // Validar sala (tamanho mínimo)
     if (dados.sala.length < 1) {
         showModal('error', 'Sala Inválida', 'Informe o número ou nome da sala.');
         return false;
     }
     
-    // Validar email
     if (!dados.email || !validarEmail(dados.email)) {
         showModal('error', 'Email Inválido', 'Digite um email válido. Exemplo: estudante@ipil.ao');
         return false;
     }
     
-    // Validar telefone (9 dígitos)
     if (!dados.telefone || !validarTelefone(dados.telefone)) {
         showModal('error', 'Telefone Inválido', 'O telefone deve conter exatamente 9 dígitos numéricos. Ex: 923456789');
         return false;
     }
     
-    // Validar número de processo (formato: 5 ou mais caracteres alfanuméricos)
     if (!dados.processo || dados.processo.length < 5) {
         showModal('error', 'Número de Processo Inválido', 'O número de processo deve ter no mínimo 5 caracteres.');
         return false;
     }
     
-    // Validar senha (mínimo 6 caracteres)
     if (!dados.senha || dados.senha.length < 6) {
         showModal('error', 'Senha Inválida', 'A senha deve ter no mínimo 6 caracteres para garantir a segurança da sua conta.');
         return false;
     }
     
-    // Validar força da senha (opcional - recomendação)
     const forcaSenha = verificarForcaSenha(dados.senha);
     if (forcaSenha.fraca && dados.senha.length < 8) {
         return new Promise((resolve) => {
@@ -386,7 +354,6 @@ async function validarFormulario(dados) {
                 `Sua senha é ${forcaSenha.mensagem}. Recomendamos uma senha mais forte com letras maiúsculas, números e símbolos. Deseja continuar mesmo assim?`,
                 (confirmado) => {
                     if (confirmado) {
-                        // Validar confirmação de senha
                         if (dados.senha !== dados.confirmarSenha) {
                             showModal('error', 'Senhas não coincidem', 'As senhas digitadas não são iguais. Verifique e tente novamente.');
                             resolve(false);
@@ -401,7 +368,6 @@ async function validarFormulario(dados) {
         });
     }
     
-    // Validar confirmação de senha
     if (dados.senha !== dados.confirmarSenha) {
         showModal('error', 'Senhas não coincidem', 'As senhas digitadas não são iguais. Verifique e tente novamente.');
         return false;
@@ -411,10 +377,8 @@ async function validarFormulario(dados) {
 }
 
 // Função de cadastro de usuários
-
 async function cadastrarUsuario(dados) {
     try {
-        // Converter a data para o formato YYYY-MM-DD se necessário
         let dataFormatada = dados.nascimento;
         if (dataFormatada && dataFormatada.includes('/')) {
             const partes = dataFormatada.split('/');
@@ -435,9 +399,8 @@ async function cadastrarUsuario(dados) {
             sala: dados.sala.toUpperCase()
         };
 
-        console.log(' Enviando dados para API:', payload);
+        console.log('📤 Enviando dados para API:', payload);
 
-        // CORREÇÃO: Usar a URL completa do backend na porta 3000
         const API_URL = 'http://localhost:3000/api/usuarios';
         
         const resposta = await fetch(API_URL, {
@@ -451,29 +414,26 @@ async function cadastrarUsuario(dados) {
         const dadosResposta = await resposta.json();
         
         if (dadosResposta.success) {
-            console.log('Cadastro realizado:', dadosResposta.usuario);
+            console.log('✅ Cadastro realizado:', dadosResposta.usuario);
             return dadosResposta;
         } else {
             throw new Error(dadosResposta.error || 'Erro ao realizar cadastro');
         }
     } catch (erro) {
-        console.error('Erro na requisição:', erro);
+        console.error('❌ Erro na requisição:', erro);
         throw erro;
     }
 }
 
 // Função para validar a idade em tempo real
-
 function configurarValidacaoIdade() {
     const dataNascimentoInput = document.getElementById('anoNascimento');
     if (dataNascimentoInput) {
-        // Adicionar indicador de idade
         const idadeIndicator = document.createElement('div');
         idadeIndicator.id = 'idadeIndicator';
         idadeIndicator.className = 'text-xs mt-1 hidden';
         dataNascimentoInput.parentNode.appendChild(idadeIndicator);
         
-        // Adicionar informação sobre o período permitido
         const infoPeriodo = document.createElement('div');
         infoPeriodo.className = 'text-xs text-gray-400 mt-1 flex items-center';
         infoPeriodo.innerHTML = '<i class="fas fa-info-circle mr-1 text-orange-500"></i>Apenas nascidos entre 1976 e 2010';
@@ -489,11 +449,8 @@ function configurarValidacaoIdade() {
                 indicator.classList.add('text-green-500');
                 this.classList.remove('border-red-500');
                 this.classList.add('border-green-500');
-                
-                // Mostrar notificação de sucesso
                 mostrarNotificacao('Data de nascimento válida!', 'success');
                 
-                // Remover a classe verde após 3 segundos
                 setTimeout(() => {
                     this.classList.remove('border-green-500');
                     this.classList.add('border-gray-300');
@@ -513,7 +470,6 @@ function configurarValidacaoIdade() {
 }
 
 // Bloqueio de teclas inválidas
-
 function bloquearTeclasInvalidas(event, tipo) {
     const tecla = event.key;
     
@@ -522,7 +478,7 @@ function bloquearTeclasInvalidas(event, tipo) {
         if (!regex.test(tecla) && 
             tecla !== 'Backspace' && tecla !== 'Delete' && tecla !== 'Tab' && 
             tecla !== 'Enter' && tecla !== 'ArrowLeft' && tecla !== 'ArrowRight' && 
-            tecla !== 'ArrowUp' && tecla !== 'ArrowDown' && tecla !== 'Home' && tecla !== 'End') {
+            tecla !== 'ArrowUp' && tecla !== 'ArrowDown' && tecla !== 'Home' && tecla !== 'End' && tecla !== 'Escape') {
             event.preventDefault();
             mostrarNotificacao('Apenas letras e espaços são permitidos', 'warning');
             return false;
@@ -532,7 +488,7 @@ function bloquearTeclasInvalidas(event, tipo) {
         if (!regex.test(tecla) && 
             tecla !== 'Backspace' && tecla !== 'Delete' && tecla !== 'Tab' && 
             tecla !== 'Enter' && tecla !== 'ArrowLeft' && tecla !== 'ArrowRight' && 
-            tecla !== 'ArrowUp' && tecla !== 'ArrowDown' && tecla !== 'Home' && tecla !== 'End') {
+            tecla !== 'ArrowUp' && tecla !== 'ArrowDown' && tecla !== 'Home' && tecla !== 'End' && tecla !== 'Escape') {
             event.preventDefault();
             mostrarNotificacao('Apenas letras e números são permitidos', 'warning');
             return false;
@@ -541,26 +497,72 @@ function bloquearTeclasInvalidas(event, tipo) {
     return true;
 }
 
-// Inicialização
+// Função para redirecionamento seguro
+function redirecionarParaDashboard() {
+    console.log('🔄 Iniciando redirecionamento...');
+    console.log('📍 URL atual:', window.location.href);
+    console.log('📁 Caminho atual:', window.location.pathname);
+    
+    // Caminhos possíveis para o dashboard
+    const possiveisCaminhos = [
+        './dashboard.html',
+        '../dashboard.html',
+        '../../dashboard.html',
+        '/frontend/usuario/dashboard.html',
+        '/frontend/dashboard.html',
+        '/dashboard.html'
+    ];
+    
+    // Encontrar o primeiro caminho que existe
+    let caminhoEncontrado = null;
+    
+    // Verificar cada caminho (usando Promise.all para testar em paralelo)
+    Promise.all(possiveisCaminhos.map(async (caminho) => {
+        try {
+            const response = await fetch(caminho, { method: 'HEAD' });
+            if (response.ok) {
+                console.log('✅ Dashboard encontrado em:', caminho);
+                caminhoEncontrado = caminho;
+            }
+        } catch (e) {
+            // Ignorar erros
+        }
+    })).then(() => {
+        if (caminhoEncontrado) {
+            console.log('🎯 Redirecionando para:', caminhoEncontrado);
+            window.location.replace(caminhoEncontrado);
+        } else {
+            console.warn('⚠️ Nenhum dashboard encontrado, tentando caminho padrão');
+            // Tentar redirecionar para o caminho mais provável
+            const caminhoPadrao = './dashboard.html';
+            console.log('🔄 Tentando caminho padrão:', caminhoPadrao);
+            window.location.href = caminhoPadrao;
+        }
+    }).catch(() => {
+        // Fallback
+        console.log('🔄 Fallback: redirecionando para ./dashboard.html');
+        window.location.href = './dashboard.html';
+    });
+}
 
+// Inicialização
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Página de registro carregada');
+    console.log('🚀 Página de registro carregada');
     
     // Verificar se o servidor está online
     async function verificarServidor() {
         try {
             const resposta = await fetch('http://localhost:3000/health');
             if (resposta.ok) {
-                console.log('Servidor backend está online na porta 3000');
+                console.log('✅ Servidor backend está online na porta 3000');
             }
         } catch (error) {
-            console.warn('Servidor backend não está respondendo em http://localhost:3000');
+            console.warn('⚠️ Servidor backend não está respondendo em http://localhost:3000');
             console.warn('Certifique-se de que o servidor Node.js está rodando com: node server.js');
         }
     }
     verificarServidor();
     
-    // Configurar validação de idade
     configurarValidacaoIdade();
     
     // Elementos do formulário
@@ -569,7 +571,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const salaInput = document.getElementById('sala');
     const form = document.getElementById('registerForm');
     
-    // Elementos de validação visual
     const nomeWarning = document.getElementById('nomeWarning');
     const nomeError = document.getElementById('nomeError');
     const turmaWarning = document.getElementById('turmaWarning');
@@ -577,7 +578,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const salaWarning = document.getElementById('salaWarning');
     const salaError = document.getElementById('salaError');
     
-    // Validação em tempo real para o campo Nome
     if (nomeInput) {
         nomeInput.addEventListener('input', function() {
             validarCampo(nomeInput, 'letrasEspacos', nomeWarning, nomeError);
@@ -598,7 +598,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Validação em tempo real para o campo Turma
     if (turmaInput) {
         turmaInput.addEventListener('input', function() {
             validarCampo(turmaInput, 'letrasNumeros', turmaWarning, turmaError);
@@ -619,7 +618,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Validação em tempo real para o campo Sala
     if (salaInput) {
         salaInput.addEventListener('input', function() {
             validarCampo(salaInput, 'letrasNumeros', salaWarning, salaError);
@@ -640,7 +638,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Validação do telefone (limitar a 9 dígitos)
     const telefoneInput = document.getElementById('telefone');
     if (telefoneInput) {
         telefoneInput.addEventListener('input', function() {
@@ -654,10 +651,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }, 2000);
             }
         });
-    }
-    
-    // Validação do telefone no blur
-    if (telefoneInput) {
+        
         telefoneInput.addEventListener('blur', function() {
             if (this.value.length > 0 && this.value.length !== 9) {
                 showModal('warning', 'Telefone Incompleto', 'O telefone deve ter exatamente 9 dígitos. Ex: 923456789');
@@ -666,7 +660,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Mostrar/Esconder senha
     const togglePassword = document.getElementById('togglePassword');
     const passwordInput = document.getElementById('password');
     
@@ -680,7 +673,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Mostrar/Esconder confirmação de senha
     const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
     const confirmPasswordInput = document.getElementById('confirmPassword');
     
@@ -694,40 +686,37 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Verificar força da senha em tempo real
     if (passwordInput) {
         passwordInput.addEventListener('input', function() {
             const forca = verificarForcaSenha(this.value);
-            const forcaIndicator = document.getElementById('forcaSenhaIndicator');
+            let forcaIndicator = document.getElementById('forcaSenhaIndicator');
             
             if (!forcaIndicator) {
                 const indicator = document.createElement('div');
                 indicator.id = 'forcaSenhaIndicator';
                 indicator.className = 'text-xs mt-1';
                 this.parentNode.appendChild(indicator);
+                forcaIndicator = indicator;
             }
             
-            const indicator = document.getElementById('forcaSenhaIndicator');
             if (this.value.length > 0) {
                 if (forca.forte) {
-                    indicator.innerHTML = '<i class="fas fa-shield-alt text-green-500 mr-1"></i><span class="text-green-500">✓ Senha forte - Muito bom!</span>';
+                    forcaIndicator.innerHTML = '<i class="fas fa-shield-alt text-green-500 mr-1"></i><span class="text-green-500">✓ Senha forte - Muito bom!</span>';
                 } else if (forca.media) {
-                    indicator.innerHTML = '<i class="fas fa-shield-alt text-yellow-500 mr-1"></i><span class="text-yellow-500">⚠️ Senha média - Adicione números e símbolos</span>';
+                    forcaIndicator.innerHTML = '<i class="fas fa-shield-alt text-yellow-500 mr-1"></i><span class="text-yellow-500">⚠️ Senha média - Adicione números e símbolos</span>';
                 } else {
-                    indicator.innerHTML = '<i class="fas fa-shield-alt text-red-500 mr-1"></i><span class="text-red-500">❌ Senha fraca - Use letras maiúsculas, números e símbolos</span>';
+                    forcaIndicator.innerHTML = '<i class="fas fa-shield-alt text-red-500 mr-1"></i><span class="text-red-500">❌ Senha fraca - Use letras maiúsculas, números e símbolos</span>';
                 }
             } else {
-                indicator.innerHTML = '';
+                forcaIndicator.innerHTML = '';
             }
         });
     }
     
-    // Envio do formulário
     if (form) {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            // Coletar dados do formulário
             const dados = {
                 nome: document.getElementById('nome').value.trim(),
                 email: document.getElementById('email').value.trim(),
@@ -744,18 +733,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 foto: document.getElementById('foto')?.files[0]
             };
             
-            // Validar termos
             const termsCheckbox = document.getElementById('terms');
             if (!termsCheckbox.checked) {
                 showModal('warning', 'Aceite os Termos', 'Você deve aceitar os termos e condições para realizar o cadastro.');
                 return;
             }
             
-            // Validar todos os campos
             const valido = await validarFormulario(dados);
             if (!valido) return;
             
-            // Desabilitar botão para evitar múltiplos envios
             const submitBtn = document.getElementById('submitBTN');
             const originalText = submitBtn.innerHTML;
             submitBtn.disabled = true;
@@ -768,9 +754,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 showLoading(false);
                 showModal('success', 'Cadastro Realizado!', 'Sua conta foi criada com sucesso! Você será redirecionado para o dashboard.');
                 
+                // Aguardar o modal ser fechado ou usar setTimeout
                 setTimeout(() => {
-                    window.location.href = 'usuario/dashboard.html';
+                    console.log('🔄 Redirecionando para o dashboard...');
+                    redirecionarParaDashboard();
                 }, 2000);
+                
             } catch (erro) {
                 showLoading(false);
                 showModal('error', 'Erro no Cadastro', erro.message || 'Ocorreu um erro ao realizar o cadastro. Tente novamente.');

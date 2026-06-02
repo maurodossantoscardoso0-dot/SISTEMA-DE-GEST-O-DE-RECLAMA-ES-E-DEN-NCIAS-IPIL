@@ -273,7 +273,7 @@ function verificarAdmin() {
     if (usuario.tipo !== 'admin') {
         showModal('error', 'Acesso Negado', '⛔ Apenas administradores podem acessar este painel.');
         setTimeout(() => {
-            window.location.href = '../aluno/dashboard.html';
+            window.location.href = '../usuario/dashboard.html';
         }, 2000);
         return null;
     }

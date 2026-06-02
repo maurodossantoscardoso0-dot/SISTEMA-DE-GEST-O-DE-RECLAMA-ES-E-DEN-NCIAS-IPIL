@@ -12,7 +12,17 @@
         * { font-family: 'Inter', sans-serif; }
         .nav-link { transition: all 0.3s ease; }
         .nav-link:hover { transform: translateY(-2px); }
-        .chart-container { position: relative; height: 300px; width: 100%; }
+        .chart-container { 
+            position: relative; 
+            height: 280px; 
+            width: 100%; 
+            margin: 0;
+            padding: 0;
+        }
+        .chart-container canvas {
+            max-height: 100%;
+            width: 100%;
+        }
         .loading { display: flex; justify-content: center; align-items: center; min-height: 200px; }
         .spinner { animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -28,6 +38,21 @@
         .anexo-item:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        /* Remover espaços extras dos cards */
+        .bg-white.rounded-xl.shadow-md {
+            overflow: hidden;
+        }
+        
+        /* Ajustar padding do card do gráfico */
+        .grafico-card {
+            padding: 1rem;
+        }
+        
+        canvas {
+            display: block;
+            margin: 0 auto;
         }
     </style>
 </head>
@@ -56,7 +81,7 @@
                             <p id="adminNome" class="text-sm font-semibold text-gray-800">Carregando...</p>
                             <p class="text-xs text-gray-500">Administrador</p>
                         </div>
-                        <div class="w-10 h-10 bg-gradient-to-r from-orange-600 to-orange-800 rounded-full flex items-center justify-center text-white font-bold">AD</div>
+                        <div id="adminAvatar" class="w-10 h-10 bg-gradient-to-r from-orange-600 to-orange-800 rounded-full flex items-center justify-center text-white font-bold">AD</div>
                     </div>
                 </div>
             </div>
@@ -85,16 +110,62 @@
 
         <div class="flex-1 lg:ml-64">
             <div class="container mx-auto px-4 py-8 pb-24 lg:pb-8">
-                <div class="flex items-center text-sm text-gray-500 mb-6"><a href="#" class="hover:text-orange-600">Admin</a><i class="fas fa-chevron-right mx-2 text-xs"></i><span class="text-orange-600 font-medium">Dashboard</span></div>
-                <div class="mb-8"><div class="flex items-center space-x-3 mb-2"><div class="h-8 w-2 bg-gradient-to-b from-orange-600 to-orange-800 rounded-full"></div><h1 class="text-2xl md:text-3xl font-bold text-gray-800">Dashboard do Administrador</h1></div><p class="text-gray-600 ml-5">Visão geral do sistema, estatísticas e atividades recentes</p></div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8" id="cardsEstatisticas"><div class="loading col-span-full"><i class="fas fa-spinner spinner text-orange-600 text-4xl"></i></div></div>
-
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-                    <div class="lg:col-span-2 bg-white rounded-xl shadow-md p-6"><div class="flex justify-between items-center mb-6"><div><h3 class="text-lg font-bold text-gray-800">Evolução de Denúncias e Reclamações</h3><p class="text-xs text-gray-500 mt-1">Últimos 30 dias</p></div><div class="bg-orange-100 p-2 rounded-lg"><i class="fas fa-chart-bar text-orange-600"></i></div></div><div class="chart-container"><canvas id="barChart"></canvas></div></div>
-                    <div class="bg-white rounded-xl shadow-md p-6"><div class="flex justify-between items-center mb-6"><h3 class="text-lg font-bold text-gray-800">Atividades Recentes</h3><span id="totalAtividades" class="text-xs bg-orange-100 text-orange-600 px-2 py-1 rounded-full">0</span></div><div id="listaAtividades" class="space-y-4"><div class="loading"><i class="fas fa-spinner spinner text-orange-600"></i></div></div></div>
+                <div class="flex items-center text-sm text-gray-500 mb-6">
+                    <a href="#" class="hover:text-orange-600">Admin</a>
+                    <i class="fas fa-chevron-right mx-2 text-xs"></i>
+                    <span class="text-orange-600 font-medium">Dashboard</span>
+                </div>
+                
+                <div class="mb-8">
+                    <div class="flex items-center space-x-3 mb-2">
+                        <div class="h-8 w-2 bg-gradient-to-b from-orange-600 to-orange-800 rounded-full"></div>
+                        <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Dashboard do Administrador</h1>
+                    </div>
+                    <p class="text-gray-600 ml-5">Visão geral do sistema, estatísticas e atividades recentes</p>
                 </div>
 
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8" id="cardsEstatisticas">
+                    <div class="loading col-span-full">
+                        <i class="fas fa-spinner spinner text-orange-600 text-4xl"></i>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                    <!-- Card do Gráfico - SEM ESPAÇOS EM BRANCO -->
+                    <div class="lg:col-span-2 bg-white rounded-xl shadow-md overflow-hidden">
+                        <div class="px-6 py-4 border-b border-gray-100">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <h3 class="text-lg font-bold text-gray-800">Evolução de Denúncias e Reclamações</h3>
+                                    <p class="text-xs text-gray-500 mt-1">Últimos 30 dias</p>
+                                </div>
+                                <div class="bg-orange-100 p-2 rounded-lg">
+                                    <i class="fas fa-chart-bar text-orange-600"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-0" style="height: 300px; width: 100%;">
+                            <canvas id="barChart" style="width: 100%; height: 100%; display: block;"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- Card de Atividades Recentes -->
+                    <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                        <div class="px-6 py-4 border-b border-gray-100">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-lg font-bold text-gray-800">Atividades Recentes</h3>
+                                <span id="totalAtividades" class="text-xs bg-orange-100 text-orange-600 px-2 py-1 rounded-full">0</span>
+                            </div>
+                        </div>
+                        <div id="listaAtividades" class="p-4 space-y-4 max-h-80 overflow-y-auto">
+                            <div class="loading">
+                                <i class="fas fa-spinner spinner text-orange-600"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabela de Gestão -->
                 <div class="bg-white rounded-xl shadow-md overflow-hidden mb-8">
                     <div class="px-6 py-4 bg-gradient-to-r from-orange-600 to-orange-800 flex justify-between items-center">
                         <h3 class="text-lg font-bold text-white">Gestão de Denúncias e Reclamações</h3>
@@ -117,7 +188,7 @@
                             <tbody id="tabelaGestao" class="bg-white divide-y divide-gray-200">
                                 <tr>
                                     <td colspan="6" class="px-6 py-8 text-center text-gray-500">
-                                        <i class="fas fa-spinner fa-spin text-orange-500 text-2xl mb-2"></i>
+                                        <i class="fas fa-spinner fa-spin text-orange-500 text-2xl mb-2 block"></i>
                                         <p>Carregando atividades...</p>
                                     </td>
                                 </tr>
@@ -134,6 +205,7 @@
         </div>
     </div>
 
+    <script src="../shared/profile.js"></script>
     <script src="./dashboardadmin.js"></script>
 </body>
 </html>

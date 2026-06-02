@@ -113,7 +113,7 @@ function showToast(type, message, duration = 3000) {
 }
 
 // Mostrar detalhes da reclamação em modal (substitui o alert)
-function showDetailsModal(reclamacao, anexos = []) {
+function showDetailsModal(reclamacao) {
     const statusCores = {
         aberta: 'bg-yellow-100 text-yellow-800 border-yellow-300',
         em_andamento: 'bg-blue-100 text-blue-800 border-blue-300',
@@ -192,7 +192,6 @@ function showDetailsModal(reclamacao, anexos = []) {
                 </div>
             </div>
             ` : ''}
-            ${renderAnexosHtml(reclamacao.anexos || anexos)}
         </div>
     `;
     
@@ -623,8 +622,7 @@ function filtrarReclamacoes() {
 async function verDetalhes(id) {
     const reclamacao = reclamacoes.find(r => r.id === id);
     if (reclamacao) {
-        const anexos = await buscarAnexos(null, reclamacao.id);
-        showDetailsModal(reclamacao, anexos);
+        showDetailsModal(reclamacao);
     } else {
         showToast('error', 'Reclamação não encontrada');
     }
